@@ -81,6 +81,7 @@ Route::group([
             /**
              * Check the unique user information
              */
+            
             Route::get('username/exist',[UserController::class,'checkUsername']);
             Route::get('phone/exist',[UserController::class,'checkPhone']);
             Route::get('email/exist',[UserController::class,'checkEmail']);
