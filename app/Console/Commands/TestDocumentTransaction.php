@@ -70,6 +70,13 @@ class TestDocumentTransaction extends Command
                 'subject' => "ប្រធានបទនៃការបញ្ជូនឯកសារ " . $start ,
                 'sent_at' => \Carbon\Carbon::now()->format("Y-m-d H:i:s") ,
                 'previous_transaction_id' => $previous_transaction != null ? $previous_transaction->id : null , // The first step of document transaction/flow
+                'tpid' => $previous_transaction != null 
+                    ? ( 
+                        $previous_transaction->tpid != null && $previous_transaction->tpid != '' 
+                        ? $previous_transaction->tpid . ':' . $previous_transaction->id 
+                        : $previous_transaction->id 
+                    ) 
+                    : null , // The first step of document transaction/flow
                 'sender_id' => $sender->id ,
                 'next_transaction_id' => null ,
                 'created_by' => $sender->id ,
