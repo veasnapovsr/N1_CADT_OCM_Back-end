@@ -29,9 +29,15 @@ class Transaction extends Model
         return $this->hasOne( \App\Models\Organization\Organization::class , 'destination_organization_id' , 'id' );
     }
     public function sender(){
-        return $this->belongsTo( \App\Models\User::class , 'user_id' , 'id' );
+        return $this->belongsTo( \App\Models\User::class , 'sender_id' , 'id' );
     }
     public function receivers(){
-        return $this->hasMany( \App\Models\Document\Receriver::class , 'document_transaction_id' , 'id' );
+        return $this->hasMany( \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
+    }
+    public function previous(){
+        return $this->hasOne( \App\Models\Document\Transaction::class , 'id' , 'previous_transaction_id' );
+    }
+    public function next(){
+        return $this->hasOne( \App\Models\Document\Transaction::class , 'id' , 'next_transaction_id' );
     }
 }

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('sent_at',50)->nullable(true)->comment('The datetime that the document sent out. sent_at == null ? draft : not draft.');
             $table->integer('previous_transaction_id')->nullable(true)->default(0)->comment('The id of the previous transaction_id');
             $table->integer('next_transaction_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
+            $table->string('tpid',191)->nullable(false)->comment('The structure ids');
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');
             $table->integer('deleted_by')->default(0)->comment('Destroyer of the record');

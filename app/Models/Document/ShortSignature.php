@@ -12,6 +12,9 @@ class ShortSignature extends Model
      */
     protected $table = 'document_short_signatures';
     public function document(){
-        return $this->belongsTo( \App\Models\Document\Document::class , 'document_id' , 'user_id' );
+        return $this->belongsTo( \App\Models\Document\Document::class , 'document_id' , 'id' );
+    }
+    public function user(){
+        return $this->belongsTo( \App\Models\User::class , 'user_id' , 'id' );
     }
 }

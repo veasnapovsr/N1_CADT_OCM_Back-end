@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('document_briefings', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('document_id')->nullable(false)->default(0);
-            $table->text('breifing')->nullable(true);
+            $table->text('briefing')->nullable(true);
             $table->integer('briefer_id')->nullable(false)->default(0)->comment('The id of the user that give a breif.');
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');

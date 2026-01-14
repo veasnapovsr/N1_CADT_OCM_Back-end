@@ -27,10 +27,10 @@ class Document extends Model
         return $this->hasMany( \App\Models\Document\Briefing::class , 'document_id' , 'id' );
     }
     public function shortSignatures(){
-        return $this->hasMany( \App\Models\Document\ShortSignature::class , 'document_id' , 'user_id' );
+        return $this->hasMany( \App\Models\Document\ShortSignature::class , 'document_id' , 'id' );
     }
     public function signatures(){
-        return $this->hasMany( \App\Models\Document\Signature::class , 'document_id' , 'user_id' );
+        return $this->hasMany( \App\Models\Document\Signature::class , 'document_id' , 'id' );
     }
     public function author(){
         return $this->belongTos( \App\Models\User::class , 'created_by' , 'id' );
