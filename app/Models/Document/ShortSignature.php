@@ -3,9 +3,11 @@
 namespace App\Models\Document;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ShortSignature extends Model
 {
+    use SoftDeletes; 
     protected $guarded = ['id'] ;
     /**
      * ការចុះហត្ថលេខាសង្ខេបលើឯកសារ

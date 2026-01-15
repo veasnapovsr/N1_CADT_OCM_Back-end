@@ -3,9 +3,11 @@
 namespace App\Models\Document;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Receiver extends Model
 {
+    use SoftDeletes; 
     protected $guarded = ['id'] ;
     protected $table = "document_transaction_receivers" ;
     /**
@@ -33,6 +35,15 @@ class Receiver extends Model
     }
     public function isPreviewed(){
         return $this->preview_at != null ? \Carbon\Carbon::parse( $this->preview_at ) : false ;
+    }
+    public function author(){
+        return $this->belongsTo( \App\Models\User::class , 'created_by' , 'id' );
+    }
+    public function editor(){
+        return $this->belongsTo( \App\Models\User::class , 'updated_by' , 'id' );
+    }
+    public function destroyer(){
+        return $this->belongsTo( \App\Models\User::class , 'deleted_by' , 'id' );
     }
     
 }

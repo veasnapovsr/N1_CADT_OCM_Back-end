@@ -52,8 +52,11 @@ class TestDocumentTransaction extends Command
                 ->limit( rand(1, 10 ) )
                 ->get();
 
+            $documentNumber = \Carbon\Carbon::now()->format('YmdHis') ;
             $document = \App\Models\Document\Document::create([
-                'title' => 'ចំណងជើងឯកសារ ' . $start ,
+                'number' => $documentNumber ,
+                'public_key' => md5( $documentNumber ) ,
+                'objective' => 'ចំណងជើងឯកសារ ' . $start ,
                 'word_file' => 'path_to_word file' ,
                 'pdf_file' => 'path_to_word file' ,
                 'created_by' => $sender->id ,
@@ -69,12 +72,13 @@ class TestDocumentTransaction extends Command
                 'document_id' => $document->id ,
                 'subject' => "ប្រធានបទនៃការបញ្ជូនឯកសារ " . $start ,
                 'sent_at' => \Carbon\Carbon::now()->format("Y-m-d H:i:s") ,
+                'date_in' => \Carbon\Carbon::now()->format("Y-m-d H:i:s") ,
                 'previous_transaction_id' => $previous_transaction != null ? $previous_transaction->id : null , // The first step of document transaction/flow
                 'tpid' => $previous_transaction != null 
                     ? ( 
                         $previous_transaction->tpid != null && $previous_transaction->tpid != '' 
-                        ? $previous_transaction->tpid . ':' . $previous_transaction->id 
-                        : $previous_transaction->id 
+                        ? $previous_transaction->tpid . ':' . $previous_transaction->id .":"
+                        : $previous_transaction->id .":"
                     ) 
                     : null , // The first step of document transaction/flow
                 'sender_id' => $sender->id ,
@@ -114,7 +118,7 @@ class TestDocumentTransaction extends Command
             ]);
             
             foreach( $receivers AS $receiver ){
-                $transaction->receivers()->create([
+                $transaction->receiversPivot()->create([
                     'document_transaction_id' => $transaction->id ,
                     'receiver_id' => $receiver->id ,
                     'seen_at' => null ,

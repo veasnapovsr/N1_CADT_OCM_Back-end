@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('document_transactions', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('document_id')->nullable(false)->default(0)->comment('Document that will be attached with the transaction');
+            $table->integer('document_id')->nullable(true)->default(0)->comment('Document that will be attached with the transaction');
             $table->integer('sender_id')->nullable(false)->default(0)->comment('The sender of the transaction');
             $table->text('subject')->nullable(false)->comment('The subject of the document to be sent with this transaction');
             $table->string('sent_at',50)->nullable(true)->comment('The datetime that the document sent out. sent_at == null ? draft : not draft.');
+            $table->string('date_in',20)->nullable(false)->comment('The datetime that the document is check in');
             $table->integer('previous_transaction_id')->nullable(true)->default(0)->comment('The id of the previous transaction_id');
             $table->integer('next_transaction_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
             $table->string('tpid',191)->nullable(false)->comment('The structure ids');

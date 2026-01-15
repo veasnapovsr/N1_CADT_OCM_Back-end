@@ -1193,28 +1193,29 @@ class OfficerController extends Controller
      * Function delete an account
      */
     public function destroy(Request $request){
-        $people = RecordModel::find($request->id) ;
-        if( $people ){
-            if( $people->user != null ){
-                $people->user->delete();
+        $officer = RecordModel::find($request->id) ;
+        if( $officer ){
+            if( $officer->user != null ){
+                $officer->user->deleted_at = \Carbon\Carbon::now() ;
+                $officer->user->save();
             }
-            $people->deleted_at = \Carbon\Carbon::now() ;
-            $people->save();
-            // User does exists
+            if( $officer->people != null ){
+                $officer->people->deleted_at = \Carbon\Carbon::now() ;
+                $officer->people->save();
+            }
             return response([
                 'ok' => true ,
-                'user' => $people ,
-                'message' => 'គណនី '.$people->lastname . ' ' . $people->firstname .' បានលុបដោយជោគជ័យ !' ,
+                'officer' => $officer ,
+                'message' => 'បានលុបដោយជោគជ័យ !' ,
                 'ok' => true 
-                ],
-                200
+            ],200
             );
         }else{
             // User does not exists
             return response([
                 'ok' => false ,
                 'user' => null ,
-                'message' => 'សូមទោស គណនីនេះមិនមានទេ !' ],
+                'message' => 'សូមទោស ព័ត៌មាននេះមិនមានទេ !' ],
                 201
             );
         }

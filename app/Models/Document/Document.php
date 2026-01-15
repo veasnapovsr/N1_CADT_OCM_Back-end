@@ -3,9 +3,12 @@
 namespace App\Models\Document;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Document extends Model
 {
+    use SoftDeletes;
+    
     protected $guarded = ['id'] ;
     // protected $fillable = [];
     /**
@@ -33,13 +36,13 @@ class Document extends Model
         return $this->hasMany( \App\Models\Document\Signature::class , 'document_id' , 'id' );
     }
     public function author(){
-        return $this->belongTos( \App\Models\User::class , 'created_by' , 'id' );
+        return $this->belongsTo( \App\Models\User::class , 'created_by' , 'id' );
     }
     public function editor(){
-        return $this->belongTos( \App\Models\User::class , 'updated_by' , 'id' );
+        return $this->belongsTo( \App\Models\User::class , 'updated_by' , 'id' );
     }
     public function destroyer(){
-        return $this->belongTos( \App\Models\User::class , 'deleted_by' , 'id' );
+        return $this->belongsTo( \App\Models\User::class , 'deleted_by' , 'id' );
     }
     /**
      * Functions

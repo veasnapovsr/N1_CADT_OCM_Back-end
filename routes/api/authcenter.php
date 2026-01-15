@@ -16,8 +16,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthenticationCenter\AuthController;
 use App\Http\Controllers\Api\AuthenticationCenter\UserController;
 use App\Http\Controllers\Api\AuthenticationCenter\PeopleController;
-use App\Http\Controllers\Api\authcenter\RoleController;
-use App\Http\Controllers\Api\authcenter\ProfileController;
+use App\Http\Controllers\Api\AuthenticationCenter\RoleController;
+use App\Http\Controllers\Api\AuthenticationCenter\ProfileController;
 
 Route::group([
     'prefix' => 'authcenter' ,
@@ -163,4 +163,5 @@ Route::group([
     require( 'authcenter/officerpenaltyhistory.php');
     require( 'authcenter/officermedalhistory.php');
     require( 'authcenter/officerpendingwork.php');
+    require( 'authcenter/documenttransaction.php');
 });

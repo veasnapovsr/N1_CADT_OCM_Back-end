@@ -3,9 +3,11 @@
 namespace App\Models\Document;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Briefing extends Model
 {
+    use SoftDeletes ;
     protected $guarded = ['id'] ;
     protected $table = "document_briefings" ;
     /**
@@ -17,5 +19,14 @@ class Briefing extends Model
     }
     public function briefer(){
         return $this->belongsTo( \App\Models\User::class , 'user_id' , 'id' );
+    }
+    public function author(){
+        return $this->belongsTo( \App\Models\User::class , 'created_by' , 'id' );
+    }
+    public function editor(){
+        return $this->belongsTo( \App\Models\User::class , 'updated_by' , 'id' );
+    }
+    public function destroyer(){
+        return $this->belongsTo( \App\Models\User::class , 'deleted_by' , 'id' );
     }
 }

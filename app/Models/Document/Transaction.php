@@ -3,9 +3,11 @@
 namespace App\Models\Document;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Transaction extends Model
 {
+    use SoftDeletes; 
     protected $guarded = ['id'] ;
     /**
      * ការបញ្ជូនឯកសារត្រូវមានដូចជា៖ 
@@ -22,16 +24,13 @@ class Transaction extends Model
     public function document(){
         return $this->belongsTo( \App\Models\Document\Document::class , 'document_id' , 'id' );
     }
-    public function sourceOrganization(){
-        return $this->hasOne( \App\Models\Organization\Organization::class , 'source_organization_id' , 'id' );
-    }
-    public function destinationOrganization(){
-        return $this->hasOne( \App\Models\Organization\Organization::class , 'destination_organization_id' , 'id' );
-    }
     public function sender(){
         return $this->belongsTo( \App\Models\User::class , 'sender_id' , 'id' );
     }
     public function receivers(){
+        return $this->hasManyThrough( \App\Models\User::class , \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
+    }
+    public function receiversPivot(){
         return $this->hasMany( \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
     }
     public function previous(){
@@ -40,4 +39,22 @@ class Transaction extends Model
     public function next(){
         return $this->hasOne( \App\Models\Document\Transaction::class , 'id' , 'next_transaction_id' );
     }
+    public function author(){
+        return $this->belongsTo( \App\Models\User::class , 'created_by' , 'id' );
+    }
+    public function editor(){
+        return $this->belongsTo( \App\Models\User::class , 'updated_by' , 'id' );
+    }
+    public function destroyer(){
+        return $this->belongsTo( \App\Models\User::class , 'deleted_by' , 'id' );
+    }
+    public function send(){
+        $this->document->shortSignatures()->create([
+            'document_id' => $this->document->id ,
+            'user_id' => $this->sender->id
+        ]);
+        $this->sent_at = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+        $this->save();
+    }
+        
 }
