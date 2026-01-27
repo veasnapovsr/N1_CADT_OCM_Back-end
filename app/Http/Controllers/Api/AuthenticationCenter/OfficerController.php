@@ -1524,22 +1524,25 @@ class OfficerController extends Controller
         return response()->json([
             'ok' => true ,
             'message' => 'រួចរាល់' ,
-            'records' => \App\Models\People\People::whereNull('deleted_at')
-                ->whereHas('officers')
-                ->select('id','firstname','lastname','image','enfirstname','enlastname')
+            'records' => RecordModel::whereNull('deleted_at')
+                ->whereHas('people')
                 ->get()->map(function($officer){
-                    $officer['image'] = $officer['image'] != null && \Storage::disk('public')->exists( $officer['image'] )
-                    ? \Storage::disk('public')->url( $officer['image'] )
-                    : (
-                        isset( $officer['user'] ) && $officer['user']['avatar_url'] != null && \Storage::disk('public')->exists( $officer['user']['avatar_url'] )
-                        ? \Storage::disk('public')->url( $officer['user']['avatar_url'] )
-                        : ( 
-                            isset( $officer['people'] ) && $officer['people']['image'] != null && \Storage::disk('public')->exists( $officer['people']['image'] ) 
-                            ? \Storage::disk('public')->url( $officer['people']['image'] )
-                            : false 
-                        )
-                    );
-                    return $officer;
+                    return [
+                        'id' => $officer['id'] ,
+                        'name' => $officer['people'] != null ? $officer['people']['firstname'] . ' ' . $officer['people']['lastname'] : '' ,
+                        'enname' => $officer->people != null ? $officer['people']['enfirstname'] . ' ' . $officer['people']['enlastname'] : '' ,
+                        'image' => $officer['image'] != null && \Storage::disk('public')->exists( $officer['image'] )
+                            ? \Storage::disk('public')->url( $officer['image'] )
+                            : (
+                                isset( $officer['user'] ) && $officer['user']['avatar_url'] != null && \Storage::disk('public')->exists( $officer['user']['avatar_url'] )
+                                ? \Storage::disk('public')->url( $officer['user']['avatar_url'] )
+                                : ( 
+                                    isset( $officer['people'] ) && $officer['people']['image'] != null && \Storage::disk('public')->exists( $officer['people']['image'] ) 
+                                    ? \Storage::disk('public')->url( $officer['people']['image'] )
+                                    : false 
+                                )
+                    )
+                    ];
                 })
         ],200);
     }
