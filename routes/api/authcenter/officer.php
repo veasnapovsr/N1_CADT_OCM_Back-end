@@ -46,6 +46,7 @@ Route::group([
   /**
    * Get a record with public_key
    */
+  Route::get('signatures',[OfficerController::class,'officersSignatures']);
   Route::get('{key}/read',[OfficerController::class,'readPublic']);
   Route::get('{key}/publicphoto',[OfficerController::class,'publicPhoto']);
 });

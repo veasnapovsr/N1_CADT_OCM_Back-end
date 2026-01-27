@@ -1520,5 +1520,27 @@ class OfficerController extends Controller
             'message' => 'រួចរាល់'
         ],200);
     }
-
+    public function officersSignatures(){
+        return response()->json([
+            'ok' => true ,
+            'message' => 'រួចរាល់' ,
+            'records' => \App\Models\People\People::whereNull('deleted_at')
+                ->whereHas('officers')
+                ->select('id','firstname','lastname','image','enfirstname','enlastname')
+                ->get()->map(function($officer){
+                    $officer['image'] = $officer['image'] != null && \Storage::disk('public')->exists( $officer['image'] )
+                    ? \Storage::disk('public')->url( $officer['image'] )
+                    : (
+                        isset( $officer['user'] ) && $officer['user']['avatar_url'] != null && \Storage::disk('public')->exists( $officer['user']['avatar_url'] )
+                        ? \Storage::disk('public')->url( $officer['user']['avatar_url'] )
+                        : ( 
+                            isset( $officer['people'] ) && $officer['people']['image'] != null && \Storage::disk('public')->exists( $officer['people']['image'] ) 
+                            ? \Storage::disk('public')->url( $officer['people']['image'] )
+                            : false 
+                        )
+                    );
+                    return $officer;
+                })
+        ],200);
+    }
 }
