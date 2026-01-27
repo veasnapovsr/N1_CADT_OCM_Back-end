@@ -292,6 +292,21 @@ class TransactionController extends Controller
             'ok' => true
         ], 200);
     }
+
+    public function store(Request $request){
+        $receivers = explode(',',$request->receivers);
+        $organizations = explode(',',$request->organizations);
+        if( 
+            ( is_array( $receivers) && empty( $receivers ) ) ||
+            ( is_array( $organizations) && empty( $organizations ) )
+        ){
+            // ក្នុងករណី អ្នកទទួលមាន ឬ អង្គភាពទទួលមាន មានន័យថាបញ្ជូនចេញ
+            return $this->send( $request );
+        }else{
+            return $this->storeDraft( $request );
+        }
+    }
+
     public function storeDraft(Request $request){
         /**
          * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
@@ -982,6 +997,12 @@ class TransactionController extends Controller
         // ត្រួតពិនិ្យប្រធានបទនៃការបញ្ជូនឯកសារ
         $subject = $previousTransaction->subject;
 
+        /**
+         * ប្រតិបត្តិការបញ្ជូនអាចត្រូវបាន
+         * ១. បង្អាកដោយបច្ចៃនាមួយ
+         * ២. ឬ​បញ្ហាណាមួយដែលមិនគ្រងទុក
+         * ត្រូវថែម Column 'status' និង ត្រូវមានការផ្ដល់យោបល់ ឬសាក់សួរលើបញ្ហានេះផងដែរ
+         */
         $transaction = RecordModel::create([
             'document_id' => null ,
             'sender_id' => $receiver->id ,

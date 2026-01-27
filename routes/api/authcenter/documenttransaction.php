@@ -16,7 +16,9 @@ Route::group([
       Route::get('{id}/read',[TransactionController::class,'read']);
       Route::get('{id}/accept',[TransactionController::class,'accepted']);
       Route::post('',[TransactionController::class,'store']);
-      Route::post('',[TransactionController::class,'update']);
+      Route::post('draft',[TransactionController::class,'saveDraft']);
+      Route::post('send',[TransactionController::class,'send']);
+      Route::post('update',[TransactionController::class,'update']);
 
       // Route::delete('',[TransactionController::class,'destroy']);
       Route::post('upload/word',[TransactionController::class,'uploadWord']);

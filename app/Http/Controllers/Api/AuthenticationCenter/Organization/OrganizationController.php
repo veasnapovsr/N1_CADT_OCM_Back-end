@@ -221,8 +221,10 @@ class OrganizationController extends Controller
                     }
                 )
                 ->first();
-        $root->totalChilds = $root->totalChildNodesOfAllLevels();
-
+        if( $root != null ){
+            $root->totalChilds = $root->totalChildNodesOfAllLevels();
+        }
+        
         $queryString = [
             "where" => [
                 // 'default' => [
@@ -241,10 +243,12 @@ class OrganizationController extends Controller
                 //     ]
                 // ] ,
                 'like' => [
-                    [
+                    $root != null 
+                    ? [
                         'field' => 'tpid' ,
                         'value' => ( intval( $root->pid ) > 0 ? '%' . $root->pid.":" : '' ) . $root->id . "%"
-                    ],
+                    ]
+                    : [] ,
                     // [
                     //     'field' => 'year' ,
                     //     'value' => $date === false ? "" : $date
@@ -296,11 +300,15 @@ class OrganizationController extends Controller
         $builder = $crud->getListBuilder();
 
         // $builder->where('tpid', "LIKE" , ( intval( $root->pid ) > 0 ? $root->pid.":" : '' ) . $root->id . "%" );
-        $root->parentId = null ;
-        $root->staffs;
+        if( $root != null ) {
+            $root->parentId = null ;
+            $root->staffs;
+        }
 
         $responseData = $crud->pagination(true , $builder );
-        $responseData['records'] = $responseData['records']->prepend( $root );
+        if( $root != null ) {
+            $responseData['records'] = $responseData['records']->prepend( $root );
+        }
         $responseData['message'] = __("crud.read.success");
         $responseData['ok'] = true ;
         return response()->json($responseData);

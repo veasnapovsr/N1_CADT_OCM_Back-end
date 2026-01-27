@@ -170,4 +170,7 @@ class Organization extends Model
         });
         echo "END GENERATE : " . PHP_EOL;
     }
+    public function documentOrganizationFocalPeople(){
+        return $this->hasManyThrough( \App\Models\User::class , \App\Models\Document\OrganizationFocalPeople::class , 'organization_id' , 'id');
+    }
 }
