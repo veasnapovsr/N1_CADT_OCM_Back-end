@@ -131,7 +131,7 @@ class UserController extends Controller
          */
         if( true ){
             $builder->whereHas('roles',function( $query ) {
-                $query->whereIn('role_id',[2,3,4]);
+                $query->whereIn('role_id',[1,2]);
             });
         }
         /**
@@ -208,7 +208,10 @@ class UserController extends Controller
             /**
              * Assign role
              */
-            $backendMemberRole = \App\Models\Role::backend()->first();
+            $backendMemberRole = \App\Models\Role::backend()->where('key_name','officer')->first();
+            if( $request->role > 0 ){
+                $backendMemberRole = \App\Models\Role::find( $request->role );
+            }
             if( $backendMemberRole != null ){
                 $user->assignRole( $backendMemberRole );
             }
@@ -244,8 +247,12 @@ class UserController extends Controller
             'username' => $request->username ,
             'phone' => $request->phone
         ]) == true ){
+            $user->roles()->sync([ $request->role]);
             return response()->json([
-                'record' => $user ,
+                'record' => [
+                    'user_id' => $user->id ,
+                    'roles' => $user->roles
+                ] ,
                 'message' => 'កែប្រែព័ត៌មានរួចរាល់ !' ,
                 'ok' => true
             ], 200);

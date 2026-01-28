@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('next_transaction_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
             $table->integer('origin_organization_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
             $table->string('tpid',191)->nullable(false)->comment('The structure ids');
+            $table->string('status',20)->nullable(false)->comment('The status of the transaction');
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');
             $table->integer('deleted_by')->default(0)->comment('Destroyer of the record');

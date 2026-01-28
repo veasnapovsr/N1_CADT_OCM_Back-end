@@ -9,6 +9,20 @@ class Transaction extends Model
 {
     use SoftDeletes; 
     protected $guarded = ['id'] ;
+    const STATUS_DRAFT = 'draft' ;
+    const STATUS_SENT = 'sent' ;
+    const STATUS_PROGRESS = 'progress' ;
+    const STATUS_FINISHED = 'finished' ;
+    const STATUS_CANCELLED = 'cancelled' ;
+    const STATUSES = [
+        self::STATUS_DRAFT ,
+        self::STATUS_SENT ,
+        self::STATUS_PROGRESS ,
+        self::STATUS_FINISHED ,
+        self::STATUS_CANCELLED
+    ] ;
+
+
     /**
      * ការបញ្ជូនឯកសារត្រូវមានដូចជា៖ 
      * ១. ព័ត៌មានគោល៖ អ្នកបញ្ជូន(មានកន្លែងបញ្ជូន និងតួនាទីភ្ជាប់ជាមួយ) អ្នកទទួល(មានកន្លែងទទួល និងតួនាទីភ្ជាប់ជាមួយ) ឯកសារ(អាចជា Word និង PDF ឬមានតែWord)
@@ -51,7 +65,8 @@ class Transaction extends Model
     public function send(){
         $this->document->shortSignatures()->create([
             'document_id' => $this->document->id ,
-            'user_id' => $this->sender->id
+            'user_id' => $this->sender->id ,
+            'status' => 'sent'
         ]);
         $this->sent_at = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
         $this->save();

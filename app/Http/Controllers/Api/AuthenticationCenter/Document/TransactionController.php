@@ -19,6 +19,7 @@ class TransactionController extends Controller
         'subject' ,
         'sent_at' ,
         'date_in' ,
+        'status' ,
         'previous_transaction_id' ,
         'next_transaction_id' ,
         'tpid' ,
@@ -44,36 +45,49 @@ class TransactionController extends Controller
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
+        $status = isset( $request->status ) & strlen( $request->status ) >3 
+            ? (
+                in_array( $request->status , RecordModel::STATUSES ) 
+                    ? $request->status 
+                    : false
+            )
+            : false ;
 
         $queryString = [
-            // "where" => [
-            //     // 'default' => [
-            //     //     // ទាញយកប្រតិបត្តិការដែលនៅដើមគ្រា
-            //     //     [
-            //     //         'field' => 'previous_transaction_id' ,
-            //     //         'value' => null
-            //     //     ]
-            //     // ],
-            //     // 'in' => [
-            //     //     [
-            //     //         'field' => 'type' ,
-            //     //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
-            //     //     ]
-            //     // ] ,
-            //     // 'not' => [
-            //     //     [
-            //     //         'field' => 'type' ,
-            //     //         'value' => [4]
-            //     //     ]
-            //     // ] ,
-            //     // 'like' => [
-            //     //     $date != false
-            //     //         ? [
-            //     //             'field' => 'date_in' ,
-            //     //             'value' => $date->format('Y-m-d')
-            //     //         ] : [] 
-            //     // ]
-            // ] ,
+            "where" => [
+                'default' => [
+                    $status != false
+                        ? 
+                            [
+                                'field' => 'status' ,
+                                'value' => $status
+                            ] 
+                        : 
+                        [
+                            'field' => 'status' ,
+                            'value' => null
+                        ]
+                ],
+                // 'in' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
+                //     ]
+                // ] ,
+                // 'not' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => [4]
+                //     ]
+                // ] ,
+                // 'like' => [
+                //     $date != false
+                //         ? [
+                //             'field' => 'date_in' ,
+                //             'value' => $date->format('Y-m-d')
+                //         ] : [] 
+                // ]
+            ] ,
             // "pivots" => [
             //     $search != false ?
             //     [
@@ -336,6 +350,7 @@ class TransactionController extends Controller
             'subject' => $subject ,
             'date_in' => $dateIn->format('Y-m-d H:i:s') ,
             
+            'status' => 'draft' ,
             'created_by' => $sender->id ,
             'updated_by' => $sender->id ,
             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
