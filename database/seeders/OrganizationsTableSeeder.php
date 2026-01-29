@@ -7637,23 +7637,6 @@ class OrganizationsTableSeeder extends Seeder
             ),
             448 => 
             array (
-                'id' => 452,
-                'name' => 'នាយកដ្ឋានគ្រប់គ្រងមជ្ឈមណ្ឌលទិន្នន័យនិងសន្តិសុខឌីជីថល',
-                'desp' => NULL,
-                'tpid' => '0',
-                'pid' => NULL,
-                'cids' => NULL,
-                'image' => NULL,
-                'record_index' => NULL,
-                'active' => NULL,
-                'created_at' => '2025-06-06 08:51:24',
-                'updated_at' => '2025-06-06 08:51:24',
-                'deleted_at' => NULL,
-                'prefix' => 'OCM-DTU',
-                'keyname' => 'នាយកដ្ឋានគ្រប់គ្រងមជ្ឈមណ្ឌលទិន្នន័យនិងសន្តិសុខឌីជីថល',
-            ),
-            449 => 
-            array (
                 'id' => 453,
                 'name' => 'ការិយាល័យរដ្ឋបាល',
                 'desp' => NULL,
@@ -7669,7 +7652,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យរដ្ឋបាល',
             ),
-            450 => 
+            449 => 
             array (
                 'id' => 454,
                 'name' => 'ការិយាល័យរបៀប',
@@ -7686,7 +7669,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យរបៀប',
             ),
-            451 => 
+            450 => 
             array (
                 'id' => 455,
                 'name' => 'ការិយាល័យឯកសារ និងបណ្ណាល័យ',
@@ -7703,7 +7686,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យឯកសារនិងបណ្ណាល័យ',
             ),
-            452 => 
+            451 => 
             array (
                 'id' => 456,
                 'name' => 'ការិយាល័យសន្តិសុខ',
@@ -7720,7 +7703,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យសន្តិសុខ',
             ),
-            453 => 
+            452 => 
             array (
                 'id' => 457,
                 'name' => 'ការិយាល័យគណនេយ្យ',
@@ -7737,7 +7720,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យគណនេយ្យ',
             ),
-            454 => 
+            453 => 
             array (
                 'id' => 458,
                 'name' => 'ការិយាល័យគ្រប់គ្រងទ្រព្យសម្បត្តិរដ្ឋ',
@@ -7754,7 +7737,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យគ្រប់គ្រងទ្រព្យសម្បត្តិរដ្ឋ',
             ),
-            455 => 
+            454 => 
             array (
                 'id' => 459,
                 'name' => 'ការិយាល័យផ្គត់ផ្គង់',
@@ -7771,7 +7754,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យផ្គត់ផ្គង់',
             ),
-            456 => 
+            455 => 
             array (
                 'id' => 460,
                 'name' => 'ការិយាល័យជួសជុលនិងសាងសង់',
@@ -7788,7 +7771,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យជួសជុលនិងសាងសង់',
             ),
-            457 => 
+            456 => 
             array (
                 'id' => 461,
                 'name' => 'ការិយាល័យគ្រប់គ្រងយានយន្ត',
@@ -7805,7 +7788,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យគ្រប់គ្រងយានយន្ត',
             ),
-            458 => 
+            457 => 
             array (
                 'id' => 462,
                 'name' => 'ការិយាល័យមន្រ្តីនយោបាយ',
@@ -7822,7 +7805,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យមន្រ្តីនយោបាយ',
             ),
-            459 => 
+            458 => 
             array (
                 'id' => 463,
                 'name' => 'ការិយាល័យមន្ត្រីមុខងារសាធារណៈ',
@@ -7839,7 +7822,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យមន្ត្រីមុខងារសាធារណៈ',
             ),
-            460 => 
+            459 => 
             array (
                 'id' => 464,
                 'name' => 'ការិយាល័យអភិវឌ្ឍន៍ធនធានមនុស្ស',
@@ -7856,7 +7839,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យអភិវឌ្ឍន៍ធនធានមនុស្ស',
             ),
-            461 => 
+            460 => 
             array (
                 'id' => 465,
                 'name' => 'ការិយាល័យបដិសណ្ឋារកិច្ច',
@@ -7873,7 +7856,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យបដិសណ្ឋារកិច្ច',
             ),
-            462 => 
+            461 => 
             array (
                 'id' => 466,
                 'name' => 'ការិយាល័យរៀបចំពិធី',
@@ -7890,7 +7873,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យរៀបចំពិធី',
             ),
-            463 => 
+            462 => 
             array (
                 'id' => 467,
                 'name' => 'ការិយាល័យកិច្ចការទូទៅ និងដំណើរទស្សនកិច្ច',
@@ -7907,7 +7890,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ADM',
                 'keyname' => 'ការិយាល័យកិច្ចការទូទៅនិងដំណើរទស្សនកិច្ច',
             ),
-            464 => 
+            463 => 
             array (
                 'id' => 468,
                 'name' => 'អគ្គលេខាធិការដ្ឋាន',
@@ -7924,7 +7907,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'អគ្គលេខាធិការដ្ឋាន',
             ),
-            465 => 
+            464 => 
             array (
                 'id' => 469,
                 'name' => 'វិទ្យាស្ថានខុងជឺ',
@@ -7941,7 +7924,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានខុងជឺ',
             ),
-            466 => 
+            465 => 
             array (
                 'id' => 470,
                 'name' => 'វិទ្យាស្ថានវប្បធម៌និងវិចិត្រសិល្បៈ',
@@ -7958,7 +7941,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានវប្បធម៌និងវិចិត្រសិល្បៈ',
             ),
-            467 => 
+            466 => 
             array (
                 'id' => 471,
                 'name' => 'វិទ្យាស្ថានមនុស្សសាស្ត្រនិងវិទ្យាសាស្ត្រសង្គម',
@@ -7975,7 +7958,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានមនុស្សសាស្ត្រនិងវិទ្យាសាស្ត្រសង្គម',
             ),
-            468 => 
+            467 => 
             array (
                 'id' => 472,
                 'name' => 'វិទ្យាស្ថានវិទ្យាសាស្ត្រនិងបច្ចេកវិទ្យា',
@@ -7992,7 +7975,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានវិទ្យាសាស្ត្រនិងបច្ចេកវិទ្យា',
             ),
-            469 => 
+            468 => 
             array (
                 'id' => 473,
                 'name' => 'វិទ្យាស្ថានជីវសាស្ត្រ វេជ្ជសាស្ត្រ និងកសិកម្ម',
@@ -8009,7 +7992,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានជីវសាស្ត្រវេជ្ជសាស្ត្រនិងកសិកម្ម',
             ),
-            470 => 
+            469 => 
             array (
                 'id' => 474,
                 'name' => 'វិទ្យាស្ថានភាសាជាតិ',
@@ -8026,7 +8009,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានភាសាជាតិ',
             ),
-            471 => 
+            470 => 
             array (
                 'id' => 475,
                 'name' => 'វិទ្យាស្ថានទំនាក់ទំនងអន្តរជាតិនៃកម្ពុជា',
@@ -8043,7 +8026,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានទំនាក់ទំនងអន្តរជាតិនៃកម្ពុជា',
             ),
-            472 => 
+            471 => 
             array (
                 'id' => 476,
                 'name' => 'វិទ្យាស្ថានសិក្សាចិន',
@@ -8060,7 +8043,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'វិទ្យាស្ថានសិក្សាចិន',
             ),
-            473 => 
+            472 => 
             array (
                 'id' => 480,
                 'name' => 'នាយកដ្ឋានបោះពុម្ភផ្សាយនិងបណ្ណាល័យ',
@@ -8077,7 +8060,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'នាយកដ្ឋានបោះពុម្ភផ្សាយនិងបណ្ណាល័យ',
             ),
-            474 => 
+            473 => 
             array (
                 'id' => 481,
                 'name' => 'មជ្ឈមណ្ឌលបណ្ដុះបណ្ដាលនិងស្រាវជ្រាវ',
@@ -8094,7 +8077,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'មជ្ឈមណ្ឌលបណ្ដុះបណ្ដាលនិងស្រាវជ្រាវ',
             ),
-            475 => 
+            474 => 
             array (
                 'id' => 479,
                 'name' => 'នាយកដ្ឋានទំនាក់ទំនងសាធារណៈនិងពិធីការ',
@@ -8111,7 +8094,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'នាយកដ្ឋានទំនាក់ទំនងសាធារណៈនិងពិធីការ',
             ),
-            476 => 
+            475 => 
             array (
                 'id' => 482,
                 'name' => 'ខុទ្ទកាល័យ',
@@ -8128,7 +8111,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'ខុទ្ទកាល័យ',
             ),
-            477 => 
+            476 => 
             array (
                 'id' => 22,
                 'name' => 'នាយកដ្ឋានព័ត៌មាន ប្រៃសណីយ៍ និងទូរគមនាគមន៍',
@@ -8145,7 +8128,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'នាយកដ្ឋានព័ត៌មានប្រៃសណីយ៍និងទូរគមនាគមន៍',
             ),
-            478 => 
+            477 => 
             array (
                 'id' => 486,
                 'name' => 'អង្គភាពរដ្ឋបាលសរុប',
@@ -8162,7 +8145,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'រ.ប.ស.',
                 'keyname' => 'អង្គភាពរដ្ឋបាលសរុប',
             ),
-            479 => 
+            478 => 
             array (
                 'id' => 487,
                 'name' => 'អង្គភាពតាមដាន ត្រួតពិនិត្យ និងវាយតម្លៃ',
@@ -8179,7 +8162,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ត.ត.វ.',
                 'keyname' => 'អង្គភាពតាមដានត្រួតពិនិត្យនិងវាយតម្លៃ',
             ),
-            480 => 
+            479 => 
             array (
                 'id' => 488,
                 'name' => 'ផ្នែករដ្ឋបាល',
@@ -8196,7 +8179,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'រ.ប',
                 'keyname' => 'ផ្នែករដ្ឋបាល',
             ),
-            481 => 
+            480 => 
             array (
                 'id' => 477,
                 'name' => 'លេខាធិការដ្ឋានក្រុមប្រឹក្សាបណ្ឌិតសភាចារ្យ',
@@ -8213,7 +8196,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'លេខាធិការដ្ឋានក្រុមប្រឹក្សាបណ្ឌិតសភាចារ្យ',
             ),
-            482 => 
+            481 => 
             array (
                 'id' => 66,
                 'name' => 'រាជបណ្ឌិត្យសភាកម្ពុជា',
@@ -8230,7 +8213,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => NULL,
                 'keyname' => NULL,
             ),
-            483 => 
+            482 => 
             array (
                 'id' => 478,
                 'name' => 'ឧទ្យានរាជបណ្ឌិត្យសភាកម្ពុជា តេជោសែន ឫស្សីត្រឹប',
@@ -8247,7 +8230,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'ឧទ្យានរាជបណ្ឌិត្យសភាកម្ពុជាតេជោសែនឫស្សីត្រឹប',
             ),
-            484 => 
+            483 => 
             array (
                 'id' => 483,
                 'name' => 'នាយកដ្ឋានរដ្ឋបាលនិងហិរញ្ញវត្ថុ',
@@ -8264,7 +8247,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'RAC',
                 'keyname' => 'នាយកដ្ឋានរដ្ឋបាលនិងហិរញ្ញវត្ថុ',
             ),
-            485 => 
+            484 => 
             array (
                 'id' => 484,
                 'name' => 'នាយកដ្ឋានមហាផ្ទៃ ការពារជាតិ យុត្តិធម៌ និងកិច្ចការព្រំដែន',
@@ -8281,7 +8264,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'នាយកដ្ឋានមហាផ្ទៃការពារជាតិយុត្តិធម៌និងកិច្ចការព្រំដែន',
             ),
-            486 => 
+            485 => 
             array (
                 'id' => 485,
                 'name' => 'នាយកដ្ឋានមុខងារសាធារណៈ អធិការកិច្ច និងស្ថាប័នធម្មនុញ្ញ',
@@ -8298,7 +8281,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'នាយកដ្ឋានមុខងារសាធារណៈអធិការកិច្ចនិងស្ថាប័នធម្មនុញ្ញ',
             ),
-            487 => 
+            486 => 
             array (
                 'id' => 489,
                 'name' => 'ផ្នែកផ្គត់ផ្គង់ហិរញ្ញវត្ថុ',
@@ -8315,7 +8298,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ផ.ហ.',
                 'keyname' => 'ផ្នែកផ្គត់ផ្គង់ហិរញ្ញវត្ថុ',
             ),
-            488 => 
+            487 => 
             array (
                 'id' => 490,
                 'name' => 'ផ្នែកប្រតិបត្តិ',
@@ -8332,7 +8315,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ប.ត.ប.',
                 'keyname' => 'ផ្នែកប្រតិបត្តិ',
             ),
-            489 => 
+            488 => 
             array (
                 'id' => 491,
                 'name' => 'ផ្នែកគ្រប់គ្រងទិន្នន័យនិងព័ត៌មានវិទ្យា',
@@ -8349,7 +8332,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'ទ.ព.វ',
                 'keyname' => 'ផ្នែកគ្រប់គ្រងទិន្នន័យនិងព័ត៌មានវិទ្យា',
             ),
-            490 => 
+            489 => 
             array (
                 'id' => 437,
                 'name' => 'លេខាធិការដ្ឋាន ក.រ.ម',
@@ -8366,7 +8349,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'លេខាធិការដ្ឋានក.រ.ម',
             ),
-            491 => 
+            490 => 
             array (
                 'id' => 492,
                 'name' => 'ទីប្រឹក្សានិងជំនួយការនាយករដ្ឋមន្ត្រី',
@@ -8383,7 +8366,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ទីប្រឹក្សានិងជំនួយការនាយករដ្ឋមន្ត្រី',
             ),
-            492 => 
+            491 => 
             array (
                 'id' => 493,
                 'name' => 'ទីប្រឹក្សារាជរដ្ឋាភិបាល ទីប្រឹក្សានិងជំនួយការនាយករដ្ឋមន្ត្រី',
@@ -8400,7 +8383,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ទីប្រឹក្សារាជរដ្ឋាភិបាលទីប្រឹក្សានិងជំនួយការនាយករដ្ឋមន្ត្រី',
             ),
-            493 => 
+            492 => 
             array (
                 'id' => 494,
                 'name' => 'ទីប្រឹក្សានិងជំនួយការអមទីស្ដីការគណៈរដ្ឋមន្ត្រី',
@@ -8417,7 +8400,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ទីប្រឹក្សានិងជំនួយការអមទីស្ដីការគណៈរដ្ឋមន្ត្រី',
             ),
-            494 => 
+            493 => 
             array (
                 'id' => 495,
                 'name' => 'ក្រុមប្រឹក្សា អាជ្ញាធរ គណៈកម្មាធិការ និងអង្គភាពផ្សេងៗ',
@@ -8434,7 +8417,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ក្រុមប្រឹក្សាអាជ្ញាធរគណៈកម្មាធិការនិងអង្គភាពផ្សេងៗ',
             ),
-            495 => 
+            494 => 
             array (
                 'id' => 496,
                 'name' => 'រដ្ឋលេខាធិការ',
@@ -8451,7 +8434,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'រដ្ឋលេខាធិការ',
             ),
-            496 => 
+            495 => 
             array (
                 'id' => 497,
                 'name' => 'អនុរដ្ឋលេខាធិការ',
@@ -8468,7 +8451,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'អនុរដ្ឋលេខាធិការ',
             ),
-            497 => 
+            496 => 
             array (
                 'id' => 498,
                 'name' => 'អនុរដ្ឋលេខាធិការ ទទួលបន្ទុកអគ្គនាយកដ្ឋានបរិវត្តកម្មឌីជីថល',
@@ -8485,7 +8468,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'DTU',
                 'keyname' => 'អនុរដ្ឋលេខាធិការទទួលបន្ទុកអគ្គនាយកដ្ឋានបរិវត្តកម្មឌីជីថល',
             ),
-            498 => 
+            497 => 
             array (
                 'id' => 499,
                 'name' => 'រដ្ឋលេខាធិការ ទទួលបន្ទុកអគ្គនាយកដ្ឋានឥស្សរិយយសនិងគោរមងារ',
@@ -8502,7 +8485,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'រដ្ឋលេខាធិការទទួលបន្ទុកអគ្គនាយកដ្ឋានឥស្សរិយយសនិងគោរមងារ',
             ),
-            499 => 
+            498 => 
             array (
                 'id' => 500,
                 'name' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រី កែវ រ៉េមី',
@@ -8519,9 +8502,7 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រីកែវរ៉េមី',
             ),
-        ));
-        \DB::table('organizations')->insert(array (
-            0 => 
+            499 => 
             array (
                 'id' => 501,
                 'name' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រី ឆៃ ស៊ីណារិទ្ធ',
@@ -8538,7 +8519,9 @@ class OrganizationsTableSeeder extends Seeder
                 'prefix' => 'OCM',
                 'keyname' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រីឆៃស៊ីណារិទ្ធ',
             ),
-            1 => 
+        ));
+        \DB::table('organizations')->insert(array (
+            0 => 
             array (
                 'id' => 502,
                 'name' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រី ថោង ខុន',
@@ -8554,6 +8537,40 @@ class OrganizationsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'prefix' => 'OCM',
                 'keyname' => 'ខុទ្ទកាល័យឯកឧត្តមទេសរដ្ឋមន្ត្រីថោងខុន',
+            ),
+            1 => 
+            array (
+                'id' => 503,
+                'name' => 'ក្រុមការងារក្រសួងប្រៃសណីយ៍និងទូរគមនាគមន៍',
+                'desp' => 'ក្រុមការងារមកពីក្រសួងប្រៃសណីយ៍និងទូរគមនាគមន៍',
+                'tpid' => '0:2:',
+                'pid' => 2,
+                'cids' => NULL,
+                'image' => NULL,
+                'record_index' => NULL,
+                'active' => NULL,
+                'created_at' => '2025-12-23 10:52:00',
+                'updated_at' => '2025-12-31 09:45:10',
+                'deleted_at' => NULL,
+                'prefix' => 'GTCI',
+                'keyname' => 'ក្រុមការងារក្រសួងប្រៃសណីយ៍និងទូរគមនាគមន៍',
+            ),
+            2 => 
+            array (
+                'id' => 452,
+                'name' => 'នាយកដ្ឋានគ្រប់គ្រងមជ្ឈមណ្ឌលទិន្នន័យនិងសន្តិសុខឌីជីថល',
+                'desp' => NULL,
+                'tpid' => '0',
+                'pid' => NULL,
+                'cids' => NULL,
+                'image' => NULL,
+                'record_index' => NULL,
+                'active' => 1,
+                'created_at' => '2025-06-06 08:51:24',
+                'updated_at' => '2025-12-23 10:52:02',
+                'deleted_at' => NULL,
+                'prefix' => 'OCM-DTU',
+                'keyname' => 'នាយកដ្ឋានគ្រប់គ្រងមជ្ឈមណ្ឌលទិន្នន័យនិងសន្តិសុខឌីជីថល',
             ),
         ));
         

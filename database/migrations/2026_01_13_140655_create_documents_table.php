@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('file_word_name',191)->nullable(true)->comment('The name of the file word before change');
             $table->string('pdf_file',191)->nullable(true)->comment('The pdf document');
             $table->string('file_pdf_name',191)->nullable(true)->comment('The name of the file pdf before change');
+            $table->integer('document_type')->nullable(false)->default(0);
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');
             $table->integer('deleted_by')->default(0)->comment('Destroyer of the record');

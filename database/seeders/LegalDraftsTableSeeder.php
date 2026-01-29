@@ -3355,6 +3355,57 @@ class LegalDraftsTableSeeder extends Seeder
             ),
             195 => 
             array (
+                'id' => 196,
+                'regulator_id' => NULL,
+                'title' => '',
+                'objective' => 'សេចក្ដីព្រាងកម្មវិធីវិនិយោគសាធារណៈ៣ឆ្នាំរំកិល ២០២៦-២០២៨',
+                'files' => NULL,
+                'content' => '',
+                'created_by' => 1313,
+                'updated_by' => 1313,
+                'deleted_by' => NULL,
+                'status' => 0,
+                'pid' => 0,
+                'created_at' => '2025-06-10 10:10:36',
+                'updated_at' => '2025-06-10 10:10:36',
+                'deleted_at' => NULL,
+            ),
+            196 => 
+            array (
+                'id' => 197,
+                'regulator_id' => NULL,
+                'title' => '',
+                'objective' => 'សេចក្ដីព្រាងកម្មវិធីវិនិយោគសាធារណៈ៣ឆ្នាំរំកិល ២០២៦-២០២៨',
+                'files' => NULL,
+                'content' => '',
+                'created_by' => 1313,
+                'updated_by' => 1313,
+                'deleted_by' => NULL,
+                'status' => 0,
+                'pid' => 0,
+                'created_at' => '2025-06-10 10:13:06',
+                'updated_at' => '2025-06-10 10:13:06',
+                'deleted_at' => NULL,
+            ),
+            197 => 
+            array (
+                'id' => 198,
+                'regulator_id' => NULL,
+                'title' => '',
+                'objective' => 'សេចក្ដីព្រាងអនុក្រឹត្យស្ដីពីការគ្រប់គ្រងផ្លូវឆ្លងកាត់ផ្លូវដែកនិងដំចំណីផ្លូវដែក',
+                'files' => NULL,
+                'content' => '',
+                'created_by' => 1313,
+                'updated_by' => 1313,
+                'deleted_by' => NULL,
+                'status' => 0,
+                'pid' => 0,
+                'created_at' => '2025-06-10 10:22:12',
+                'updated_at' => '2025-06-10 10:22:12',
+                'deleted_at' => NULL,
+            ),
+            198 => 
+            array (
                 'id' => 199,
                 'regulator_id' => NULL,
                 'title' => '',
@@ -3370,7 +3421,7 @@ class LegalDraftsTableSeeder extends Seeder
                 'updated_at' => '2025-06-12 13:58:50',
                 'deleted_at' => NULL,
             ),
-            196 => 
+            199 => 
             array (
                 'id' => 200,
                 'regulator_id' => NULL,
@@ -3387,41 +3438,7 @@ class LegalDraftsTableSeeder extends Seeder
                 'updated_at' => '2025-06-12 13:58:50',
                 'deleted_at' => NULL,
             ),
-            197 => 
-            array (
-                'id' => 196,
-                'regulator_id' => NULL,
-                'title' => '',
-                'objective' => 'សេចក្ដីព្រាងកម្មវិធីវិនិយោគសាធារណៈ៣ឆ្នាំរំកិល ២០២៦-២០២៨',
-                'files' => NULL,
-                'content' => '',
-                'created_by' => 1313,
-                'updated_by' => 1313,
-                'deleted_by' => NULL,
-                'status' => 2,
-                'pid' => 0,
-                'created_at' => '2025-06-10 10:10:36',
-                'updated_at' => '2025-12-11 13:31:33',
-                'deleted_at' => NULL,
-            ),
-            198 => 
-            array (
-                'id' => 197,
-                'regulator_id' => NULL,
-                'title' => '',
-                'objective' => 'សេចក្ដីព្រាងកម្មវិធីវិនិយោគសាធារណៈ៣ឆ្នាំរំកិល ២០២៦-២០២៨',
-                'files' => NULL,
-                'content' => '',
-                'created_by' => 1313,
-                'updated_by' => 1313,
-                'deleted_by' => NULL,
-                'status' => 2,
-                'pid' => 0,
-                'created_at' => '2025-06-10 10:13:06',
-                'updated_at' => '2025-12-11 14:40:37',
-                'deleted_at' => NULL,
-            ),
-            199 => 
+            200 => 
             array (
                 'id' => 201,
                 'regulator_id' => NULL,
@@ -3432,13 +3449,13 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 0,
+                'status' => 1,
                 'pid' => 0,
                 'created_at' => '2025-06-10 10:40:06',
-                'updated_at' => '2025-12-11 14:57:33',
+                'updated_at' => '2025-06-12 15:01:11',
                 'deleted_at' => NULL,
             ),
-            200 => 
+            201 => 
             array (
                 'id' => 202,
                 'regulator_id' => NULL,
@@ -3455,7 +3472,7 @@ class LegalDraftsTableSeeder extends Seeder
                 'updated_at' => '2025-06-12 14:06:00',
                 'deleted_at' => NULL,
             ),
-            201 => 
+            202 => 
             array (
                 'id' => 203,
                 'regulator_id' => NULL,
@@ -3472,7 +3489,7 @@ class LegalDraftsTableSeeder extends Seeder
                 'updated_at' => '2025-06-12 14:07:00',
                 'deleted_at' => NULL,
             ),
-            202 => 
+            203 => 
             array (
                 'id' => 204,
                 'regulator_id' => NULL,
@@ -3489,7 +3506,7 @@ class LegalDraftsTableSeeder extends Seeder
                 'updated_at' => '2025-06-12 14:07:06',
                 'deleted_at' => NULL,
             ),
-            203 => 
+            204 => 
             array (
                 'id' => 205,
                 'regulator_id' => NULL,
@@ -3500,13 +3517,13 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 2,
+                'status' => 0,
                 'pid' => 0,
                 'created_at' => '2025-06-12 14:11:15',
-                'updated_at' => '2025-12-11 14:57:09',
+                'updated_at' => '2025-06-12 14:11:15',
                 'deleted_at' => NULL,
             ),
-            204 => 
+            205 => 
             array (
                 'id' => 206,
                 'regulator_id' => NULL,
@@ -3517,13 +3534,13 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 2,
+                'status' => 0,
                 'pid' => 0,
                 'created_at' => '2025-06-12 14:20:16',
-                'updated_at' => '2025-12-11 14:57:33',
+                'updated_at' => '2025-06-12 14:20:16',
                 'deleted_at' => NULL,
             ),
-            205 => 
+            206 => 
             array (
                 'id' => 207,
                 'regulator_id' => NULL,
@@ -3534,13 +3551,13 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 2,
+                'status' => 0,
                 'pid' => 0,
                 'created_at' => '2025-06-12 14:22:48',
-                'updated_at' => '2025-12-11 14:57:33',
+                'updated_at' => '2025-06-12 14:22:48',
                 'deleted_at' => NULL,
             ),
-            206 => 
+            207 => 
             array (
                 'id' => 208,
                 'regulator_id' => NULL,
@@ -3551,13 +3568,13 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 2,
+                'status' => 0,
                 'pid' => 0,
                 'created_at' => '2025-06-12 14:24:01',
-                'updated_at' => '2025-12-11 14:57:33',
+                'updated_at' => '2025-06-12 14:24:01',
                 'deleted_at' => NULL,
             ),
-            207 => 
+            208 => 
             array (
                 'id' => 209,
                 'regulator_id' => NULL,
@@ -3568,27 +3585,10 @@ class LegalDraftsTableSeeder extends Seeder
                 'created_by' => 1313,
                 'updated_by' => 1313,
                 'deleted_by' => NULL,
-                'status' => 2,
+                'status' => 0,
                 'pid' => 0,
                 'created_at' => '2025-06-12 14:27:11',
-                'updated_at' => '2025-12-11 14:57:33',
-                'deleted_at' => NULL,
-            ),
-            208 => 
-            array (
-                'id' => 198,
-                'regulator_id' => NULL,
-                'title' => '',
-                'objective' => 'សេចក្ដីព្រាងអនុក្រឹត្យស្ដីពីការគ្រប់គ្រងផ្លូវឆ្លងកាត់ផ្លូវដែកនិងដំចំណីផ្លូវដែក',
-                'files' => NULL,
-                'content' => '',
-                'created_by' => 1313,
-                'updated_by' => 1313,
-                'deleted_by' => NULL,
-                'status' => 2,
-                'pid' => 0,
-                'created_at' => '2025-06-10 10:22:12',
-                'updated_at' => '2025-12-11 14:57:33',
+                'updated_at' => '2025-06-12 14:27:11',
                 'deleted_at' => NULL,
             ),
         ));

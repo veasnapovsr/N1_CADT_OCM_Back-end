@@ -46,7 +46,7 @@ class SeedingTablesCommand extends Command
             if (Schema::hasTable( $tableName )  ) {
                 $result_from_artisan = null ;
                 if( !in_array( $tableName , [ 
-                    'migrations' , 'oauth_clients' , 'oauth_access_tokens' , 'oauth_auth_codes' , 'oauth_clients' , 'oauth_personal_access_clientsoauth_refresh_tokens' , 'oauth_personal_access_clients' , 'personal_access_tokens'
+                    'regulators' , 'migrations' , 'oauth_clients' , 'oauth_access_tokens' , 'oauth_auth_codes' , 'oauth_clients' , 'oauth_personal_access_clientsoauth_refresh_tokens' , 'oauth_personal_access_clients' , 'personal_access_tokens'
                 ]) ){
                     if( \DB::table( $tableName )->count() ){
                         echo $index . " : CREATE SEED FILE FROM TABLE " . $tableName . PHP_EOL ;

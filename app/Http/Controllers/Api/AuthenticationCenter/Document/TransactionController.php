@@ -322,6 +322,18 @@ class TransactionController extends Controller
     }
 
     public function storeDraft(Request $request){
+        $user = \Auth::user() != null 
+            ? \Auth::user()
+            : (
+                auth('api')->user() 
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
         /**
          * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
          */
@@ -335,6 +347,8 @@ class TransactionController extends Controller
         }
         // ត្រួតពិនិ្យប្រធានបទនៃការបញ្ជូនឯកសារ
         $subject = strlen( trim($request->subject) ) > 0 ? trim($request->subject) : false ;
+        $objective = strlen( trim($request->objective) ) > 0 ? trim($request->objective) : false ;
+        $subject = $objective ? $objective : false ;
         if( $subject == false ){
             return response()->json([
                 'ok' => false ,
@@ -342,7 +356,7 @@ class TransactionController extends Controller
             ],422);
         }
         // ត្រួតពិនិត្យលេខអ្នកបញ្ជូនឯកសារ
-        $sender = \Auth::user();
+        $sender = $user;
 
         $transaction = RecordModel::create([
             'document_id' => null ,
@@ -381,6 +395,7 @@ class TransactionController extends Controller
         $document = \App\Models\Document\Document::create([
             'public_key' => $public_key ,
             'number' => $number ,
+            'document_type' => intval( $request->document_type ) > 0 ? intval( $request->document_type ) : 0 ,
             'objective' => $objective ,
             'created_by' => $sender->id ,
             'updated_by' => $sender->id ,
@@ -390,23 +405,28 @@ class TransactionController extends Controller
         // ភ្ជាប់ឯកសារទៅកាន់ការបញ្ជូន
         $transaction->update(['document_id'=>$document->id]);
         // ភ្ជាប់អ្នកទទួលបើសិនមាន
-        $receivers = strlen( trim($request->receivers) ) > 0 ? explode(',',trim($request->receivers)) : [] ;
-        if( !empty( $receivers) ){
-            $receivers = \App\Models\User::whereIn('id', $receivers )->get();
-            foreach( $receivers AS $receiver ){
-                $transaction->receivers()->create([
-                    'document_transaction_id' => $transaction->id ,
-                    'receiver_id' => $receiver->id ,
-                    'seen_at' => null ,
-                    'is_download' => null ,
-                    'is_preview' => null ,
-                    'created_by' => $sender->id ,
-                    'updated_by' => $sender->id ,
-                    'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
-                    'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-                ]);
-            }
-        }
+        // $receivers = strlen( trim($request->receivers) ) > 0 ? explode(',',trim($request->receivers)) : [] ;
+        // if( !empty( $receivers) ){
+        //     $receivers = \App\Models\User::whereIn('id', $receivers )->get();
+        //     foreach( $receivers AS $receiver ){
+        //         $transaction->receivers()->create([
+        //             'document_transaction_id' => $transaction->id ,
+        //             'receiver_id' => $receiver->id ,
+        //             'seen_at' => null ,
+        //             'is_download' => null ,
+        //             'is_preview' => null ,
+        //             'created_by' => $sender->id ,
+        //             'updated_by' => $sender->id ,
+        //             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
+        //             'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
+        //         ]);
+        //     }
+        // }
+        return response()->json([
+            'ok' => true ,
+            'record' => $transaction ,
+            'message' => 'ជោគជ័យ'
+        ],200);
     }
     public function changeReceiver(Request $request){
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
@@ -650,6 +670,99 @@ class TransactionController extends Controller
                     // $document->pdf_file = Storage::disk('public')->url( $document->pdf_file  );
                     // $document->word_file = Storage::disk('public')->url( $document->word_file  );
                     $document->update( [ 'file_pdf_name' => $_FILES['pdf_file']['name'] ]);
+                    return response([
+                        'ok' => true ,
+                        // 'record' => $document ,
+                        'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
+                    ],200);
+                }else{
+                    return response([
+                        'ok' => false ,
+                        // 'record' => $document ,
+                        'message' => 'បរាជ័យក្នុងការភ្ចាប់ឯកសារ។'
+                    ],500);
+                }
+            }else{
+                return response([
+                    'ok' => false ,
+                    // 'result' => $_FILES ,
+                    'message' => 'មានបញ្ហាជាមួយឯកសារដែលអ្នកបញ្ជូនមក។'
+                ],500);
+            }
+            
+        }else{
+            return response([
+                'ok' => false ,
+                // 'record' => $user ,
+                'message' => 'សូមចូលប្រព័ន្ធជាមុនសិន។'
+            ],403);
+        }
+    }
+    public function uploadFiles(Request $request){
+        return response()->json( [
+            'request' => $request->all() ,  
+            'data' => [
+                ini_get('file_uploads') ,
+                ini_get('upload_max_filesize') ,
+                ini_get('post_max_size') ,
+                ini_get('max_file_uploads') ,
+                print_r($_POST) ,
+                print_r($_FILES) ,
+                $_SERVER['REQUEST_METHOD'] ,
+                print_r(getallheaders())
+            ]
+        ], 200);
+        
+        $user = \Auth::user() != null 
+            ? \Auth::user()
+            : (
+                auth('api')->user() 
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+        if( $user ){
+            $document = intval( $request->document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
+            if( $document == null ){
+                return response()->json([
+                    'ok' => false ,
+                    'message' => 'ឯកសារនេះមិនមានឡើយ។'
+                ],422);
+            }
+            
+            
+
+            if( isset( $_FILES['files']['tmp_name'] ) && $_FILES['files']['tmp_name'] != "" ) {
+
+                /**
+                 * កំណត់ប្រភេទឯកសារដែលបានបញ្ជូនមក
+                 */
+
+                /**
+                 * រក្សារទុកឯកសារ​ PDF
+                 */
+
+                /**
+                 * រក្សារទុកឯកសារ​ Word
+                 */
+
+                $path_to_pdf_file = $document->pdf_file ;
+                $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $_FILES['files']['tmp_name'] ) );
+                $document->pdf_file = $uniqeName ;
+                $document->save();
+
+                // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
+                if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
+                    Storage::disk('public')->delete( $path_to_pdf_file );
+                }
+
+                if( Storage::disk('public')->exists( $document->pdf_file ) ){
+                    // $document->pdf_file = Storage::disk('public')->url( $document->pdf_file  );
+                    // $document->word_file = Storage::disk('public')->url( $document->word_file  );
+                    $document->update( [ 'file_pdf_name' => $_FILES['files']['name'] ]);
                     return response([
                         'ok' => true ,
                         // 'record' => $document ,

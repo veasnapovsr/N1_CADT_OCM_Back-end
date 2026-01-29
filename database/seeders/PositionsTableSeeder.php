@@ -2867,6 +2867,38 @@ class PositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'prefix' => NULL,
             ),
+            178 => 
+            array (
+                'id' => 179,
+                'name' => 'ក្រុមការងារប្រព័ន្ធសន្និសីទវីដេអូ',
+                'desp' => NULL,
+                'tpid' => '11:126',
+                'pid' => 126,
+                'cids' => NULL,
+                'image' => NULL,
+                'record_index' => NULL,
+                'active' => NULL,
+                'created_at' => '2025-12-23 10:55:40',
+                'updated_at' => '2025-12-23 10:55:40',
+                'deleted_at' => NULL,
+                'prefix' => NULL,
+            ),
+            179 => 
+            array (
+                'id' => 180,
+                'name' => 'ក្រុមការងារខាងបណ្ដាញ',
+                'desp' => NULL,
+                'tpid' => '11:126',
+                'pid' => 126,
+                'cids' => NULL,
+                'image' => NULL,
+                'record_index' => NULL,
+                'active' => NULL,
+                'created_at' => '2025-12-23 10:56:34',
+                'updated_at' => '2025-12-23 10:56:34',
+                'deleted_at' => NULL,
+                'prefix' => NULL,
+            ),
         ));
         
         

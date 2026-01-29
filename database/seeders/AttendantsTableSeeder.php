@@ -2039,12 +2039,12 @@ class AttendantsTableSeeder extends Seeder
             array (
                 'id' => 170,
                 'user_id' => 1342,
-                'date' => '2025-12-10',
+                'date' => '2026-01-09',
                 'late_or_early' => 0,
                 'worked_time' => 0,
                 'duration' => 0,
-                'created_at' => '2025-12-10 12:59:00',
-                'updated_at' => '2025-12-10 12:59:00',
+                'created_at' => '2026-01-09 14:07:01',
+                'updated_at' => '2026-01-09 14:07:01',
                 'deleted_at' => NULL,
             ),
         ));
