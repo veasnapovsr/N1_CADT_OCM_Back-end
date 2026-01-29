@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('documents', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('public_key',191)->nullable(false)->comment('The the identify number of the document as md5');
-            $table->string('number',50)->nullable(false)->comment('The the identify number of the document');
+            // $table->string('public_key',191)->nullable(false)->comment('The the identify number of the document as md5');
+            $table->string('public_key',191)->nullable()->comment('The the identify number of the document as md5');
+            $table->string('number',50)->nullable()->comment('The the identify number of the document');
+            // $table->string('number',50)->nullable(false)->comment('The the identify number of the document');
             $table->text('objective')->nullable(false)->comment("The title of the document is requred");
             $table->string('word_file',191)->nullable(true)->comment('The word document');
             $table->string('file_word_name',191)->nullable(true)->comment('The name of the file word before change');

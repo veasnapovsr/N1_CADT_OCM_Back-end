@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');
             $table->integer('deleted_by')->default(0)->comment('Destroyer of the record');
+            $table->string('accepted_at')->nullable(true);//added
             $table->timestamps(); // created_at , updated_at
             $table->softDeletes(); // deleted_at
         });

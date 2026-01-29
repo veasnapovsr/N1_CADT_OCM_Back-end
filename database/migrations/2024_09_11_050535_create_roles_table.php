@@ -15,8 +15,10 @@ return new class extends Migration
             $table->increments('id');
             $table->string('name', 191);
             $table->string('key_name', 191);
-            $table->string('sub_role', 191);
-            $table->integer('sub_role_index')->default(0);
+            // $table->string('sub_role', 191);
+            $table->string('sub_role', 191)->nullable();
+            // $table->integer('sub_role_index')->default(0);
+            $table->integer('sub_role_index')->nullable();
             $table->string('khname', 191);
             $table->string('enname', 191);
             $table->string('guard_name', 191);
