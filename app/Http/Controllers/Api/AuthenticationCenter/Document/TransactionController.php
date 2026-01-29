@@ -743,69 +743,58 @@ class TransactionController extends Controller
                     $kbFilesize = round( filesize( $file_path ) / 1024 , 4 );
                     $mbFilesize = round( $kbFilesize / 1024 , 4 );                   
 
-                    // Get just the extension as a string
-                    $extension = pathinfo($file_path, PATHINFO_EXTENSION);
-                    echo "Extension: " . $extension; // Output: php
-                    $success['extension'][] = $extension ;
                     // Get just the filename (without extension)
-                    $filename = pathinfo($file_path, PATHINFO_FILENAME);
-                    echo "Filename: " . $filename; // Output: lib.inc
-                    $mimeType = mime_content_type($file_path) ;
-                    $allowedMimeTypes = [
-                        'image/jpeg',
-                        'image/png',
-                        'image/gif',
-                        'application/pdf',
-                        'application/msword',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    ];
-                    $pdfMimeType = [
-                        'application/pdf',
-                    ];
-                    $wordMimeType = [
-                        'application/msword',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    ];
+                    $filename = $_FILES['files']['name'][$index];
 
-                    if( in_array($mimeType, $pdfMimeType) ){
-                        $path_to_pdf_file = $document->pdf_file ;
+                    // Get just the extension as a string
+                    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+                    // $mimeType = mime_content_type($file_path) ;
+                    // $allowedMimeTypes = [
+                    //     'image/jpeg',
+                    //     'image/png',
+                    //     'image/gif',
+                    //     'application/pdf',
+                    //     'application/msword',
+                    //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    // ];
+                    // $pdfMimeType = [
+                    //     'application/pdf',
+                    // ];
+                    // $wordMimeType = [
+                    //     'application/msword',
+                    //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    // ];
+
+                    if( $extension == 'pdf' ){
+                        $path_to_pdf_file = $document->pdf_file != null && strlen( $document->pdf_file ) > 0 ? $document->pdf_file : false  ;
                         $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
                         $document->pdf_file = $uniqeName ;
                         $document->save();
-                        $success['pdf'] = true;
+                        
 
                         // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
-                        if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
+                        if( $path_to_pdf_file != false && Storage::disk('public')->exists( $path_to_pdf_file ) ){
                             Storage::disk('public')->delete( $path_to_pdf_file );
                         }
                         if( Storage::disk('public')->exists( $document->pdf_file ) ){
                             $document->update( [ 'file_pdf_name' => $filename ]);
+                            $success['pdf'] = true;
                         }
-                    }elseif( in_array($mimeType, $wordMimeType) ){
-                        $path_to_word_file = $document->word_file ;
+                    }elseif( $extension == 'doc' || $extension == 'docx' ){
+                        $path_to_word_file = $document->word_file != null && strlen( $document->word_file ) > 0 ? $document->word_file : false  ;
                         $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
                         $document->word_file = $uniqeName ;
                         $document->save();
-                        $success['word'] = true;
+                        
 
                         // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
-                        if( Storage::disk('public')->exists( $path_to_word_file ) ){
+                        if( $path_to_word_file != false && Storage::disk('public')->exists( $path_to_word_file ) ){
                             Storage::disk('public')->delete( $path_to_word_file );
                         }
 
                         if( Storage::disk('public')->exists( $document->word_file ) ){
-                            $document->update( [ 'file_word_name' => $filename ]);
-                            return response([
-                                'ok' => true ,
-                                // 'record' => $document ,
-                                'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
-                            ],200);
-                        }else{
-                            return response([
-                                'ok' => false ,
-                                // 'record' => $document ,
-                                'message' => 'បរាជ័យក្នុងការភ្ចាប់ឯកសារ។'
-                            ],500);
+                            $document->update( [ 'file_word_name' => $filename ]);   
+                            $success['word'] = true;
                         }
                     }
                 }
