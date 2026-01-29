@@ -79,6 +79,7 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentSignaturesTableSeeder::class);
         $this->call(DocumentShortSignaturesTableSeeder::class);
         $this->call(DocumentTransactionReceiversTableSeeder::class);
+        $this->call(OrganizationStructurePositionPermissionsTableSeeder::class);
     }
     
 }

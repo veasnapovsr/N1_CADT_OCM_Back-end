@@ -699,20 +699,6 @@ class TransactionController extends Controller
         }
     }
     public function uploadFiles(Request $request){
-        return response()->json( [
-            'request' => $request->all() ,  
-            'data' => [
-                ini_get('file_uploads') ,
-                ini_get('upload_max_filesize') ,
-                ini_get('post_max_size') ,
-                ini_get('max_file_uploads') ,
-                print_r($_POST) ,
-                print_r($_FILES) ,
-                $_SERVER['REQUEST_METHOD'] ,
-                print_r(getallheaders())
-            ]
-        ], 200);
-        
         $user = \Auth::user() != null 
             ? \Auth::user()
             : (
@@ -725,68 +711,116 @@ class TransactionController extends Controller
                     )
             );
         if( $user ){
-            $document = intval( $request->document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
-            if( $document == null ){
-                return response()->json([
-                    'ok' => false ,
-                    'message' => 'ឯកសារនេះមិនមានឡើយ។'
-                ],422);
-            }
+            $phpFileUploadErrors = [
+                0 => 'មិនមានបញ្ហាជាមួយឯកសារឡើយ។',
+                1 => "ទំហំឯកសារធំហួសកំណត់ " . ini_get("upload_max_filesize"),
+                2 => 'ទំហំឯកសារធំហួសកំណត់នៃទំរង់បញ្ចូលទិន្នន័យ ' . ini_get('post_max_size'),
+                3 => 'The uploaded file was only partially uploaded',
+                4 => 'No file was uploaded',
+                6 => 'Missing a temporary folder',
+                7 => 'Failed to write file to disk.',
+                8 => 'A PHP extension stopped the file upload.',
+            ];
             
-            
-
-            if( isset( $_FILES['files']['tmp_name'] ) && $_FILES['files']['tmp_name'] != "" ) {
-
-                /**
-                 * កំណត់ប្រភេទឯកសារដែលបានបញ្ជូនមក
-                 */
-
-                /**
-                 * រក្សារទុកឯកសារ​ PDF
-                 */
-
-                /**
-                 * រក្សារទុកឯកសារ​ Word
-                 */
-
-                $path_to_pdf_file = $document->pdf_file ;
-                $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $_FILES['files']['tmp_name'] ) );
-                $document->pdf_file = $uniqeName ;
-                $document->save();
-
-                // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
-                if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
-                    Storage::disk('public')->delete( $path_to_pdf_file );
-                }
-
-                if( Storage::disk('public')->exists( $document->pdf_file ) ){
-                    // $document->pdf_file = Storage::disk('public')->url( $document->pdf_file  );
-                    // $document->word_file = Storage::disk('public')->url( $document->word_file  );
-                    $document->update( [ 'file_pdf_name' => $_FILES['files']['name'] ]);
-                    return response([
-                        'ok' => true ,
-                        // 'record' => $document ,
-                        'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
-                    ],200);
-                }else{
-                    return response([
+            foreach( $_FILES['files']['error'] as $error ){
+                if( $error > 0 ){
+                    return response()->json([
                         'ok' => false ,
-                        // 'record' => $document ,
-                        'message' => 'បរាជ័យក្នុងការភ្ចាប់ឯកសារ។'
-                    ],500);
+                        'message' => $phpFileUploadErrors[ $error ]
+                    ],403);
+                }    
+            }
+
+            if( ( $document = \App\Models\Document\Document::find($request->document_id) ) !== null ){
+                $success = [
+                    'pdf' => false ,
+                    'word' => false ,
+                    'extension' => []
+                ];
+                foreach( $_FILES['files']['tmp_name'] AS $index => $file ){
+                    $file_path = $_FILES['files']['tmp_name'][$index];
+
+                    $kbFilesize = round( filesize( $file_path ) / 1024 , 4 );
+                    $mbFilesize = round( $kbFilesize / 1024 , 4 );                   
+
+                    // Get just the extension as a string
+                    $extension = pathinfo($file_path, PATHINFO_EXTENSION);
+                    echo "Extension: " . $extension; // Output: php
+                    $success['extension'][] = $extension ;
+                    // Get just the filename (without extension)
+                    $filename = pathinfo($file_path, PATHINFO_FILENAME);
+                    echo "Filename: " . $filename; // Output: lib.inc
+                    $mimeType = mime_content_type($file_path) ;
+                    $allowedMimeTypes = [
+                        'image/jpeg',
+                        'image/png',
+                        'image/gif',
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    ];
+                    $pdfMimeType = [
+                        'application/pdf',
+                    ];
+                    $wordMimeType = [
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    ];
+
+                    if( in_array($mimeType, $pdfMimeType) ){
+                        $path_to_pdf_file = $document->pdf_file ;
+                        $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
+                        $document->pdf_file = $uniqeName ;
+                        $document->save();
+                        $success['pdf'] = true;
+
+                        // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
+                        if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
+                            Storage::disk('public')->delete( $path_to_pdf_file );
+                        }
+                        if( Storage::disk('public')->exists( $document->pdf_file ) ){
+                            $document->update( [ 'file_pdf_name' => $filename ]);
+                        }
+                    }elseif( in_array($mimeType, $wordMimeType) ){
+                        $path_to_word_file = $document->word_file ;
+                        $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
+                        $document->word_file = $uniqeName ;
+                        $document->save();
+                        $success['word'] = true;
+
+                        // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
+                        if( Storage::disk('public')->exists( $path_to_word_file ) ){
+                            Storage::disk('public')->delete( $path_to_word_file );
+                        }
+
+                        if( Storage::disk('public')->exists( $document->word_file ) ){
+                            $document->update( [ 'file_word_name' => $filename ]);
+                            return response([
+                                'ok' => true ,
+                                // 'record' => $document ,
+                                'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
+                            ],200);
+                        }else{
+                            return response([
+                                'ok' => false ,
+                                // 'record' => $document ,
+                                'message' => 'បរាជ័យក្នុងការភ្ចាប់ឯកសារ។'
+                            ],500);
+                        }
+                    }
                 }
+                return response([
+                    'ok' => true ,
+                    'result' => $success ,
+                    'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
+                ],200);
             }else{
                 return response([
-                    'ok' => false ,
-                    // 'result' => $_FILES ,
-                    'message' => 'មានបញ្ហាជាមួយឯកសារដែលអ្នកបញ្ជូនមក។'
-                ],500);
+                    'message' => 'សូមបញ្ជាក់អំពីលេខសម្គាល់របស់ឯកសារយោង។'
+                ],403);
             }
-            
         }else{
             return response([
-                'ok' => false ,
-                // 'record' => $user ,
                 'message' => 'សូមចូលប្រព័ន្ធជាមុនសិន។'
             ],403);
         }
