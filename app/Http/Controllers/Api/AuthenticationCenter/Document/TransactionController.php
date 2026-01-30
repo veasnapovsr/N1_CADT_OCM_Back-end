@@ -19,6 +19,7 @@ class TransactionController extends Controller
         'subject' ,
         'sent_at' ,
         'date_in' ,
+        'status' ,
         'previous_transaction_id' ,
         'next_transaction_id' ,
         'tpid' ,
@@ -44,36 +45,49 @@ class TransactionController extends Controller
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
+        $status = isset( $request->status ) & strlen( $request->status ) >3 
+            ? (
+                in_array( $request->status , RecordModel::STATUSES ) 
+                    ? $request->status 
+                    : false
+            )
+            : false ;
 
         $queryString = [
-            // "where" => [
-            //     // 'default' => [
-            //     //     // ទាញយកប្រតិបត្តិការដែលនៅដើមគ្រា
-            //     //     [
-            //     //         'field' => 'previous_transaction_id' ,
-            //     //         'value' => null
-            //     //     ]
-            //     // ],
-            //     // 'in' => [
-            //     //     [
-            //     //         'field' => 'type' ,
-            //     //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
-            //     //     ]
-            //     // ] ,
-            //     // 'not' => [
-            //     //     [
-            //     //         'field' => 'type' ,
-            //     //         'value' => [4]
-            //     //     ]
-            //     // ] ,
-            //     // 'like' => [
-            //     //     $date != false
-            //     //         ? [
-            //     //             'field' => 'date_in' ,
-            //     //             'value' => $date->format('Y-m-d')
-            //     //         ] : [] 
-            //     // ]
-            // ] ,
+            "where" => [
+                'default' => [
+                    $status != false
+                        ? 
+                            [
+                                'field' => 'status' ,
+                                'value' => $status
+                            ] 
+                        : 
+                        [
+                            'field' => 'status' ,
+                            'value' => null
+                        ]
+                ],
+                // 'in' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
+                //     ]
+                // ] ,
+                // 'not' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => [4]
+                //     ]
+                // ] ,
+                // 'like' => [
+                //     $date != false
+                //         ? [
+                //             'field' => 'date_in' ,
+                //             'value' => $date->format('Y-m-d')
+                //         ] : [] 
+                // ]
+            ] ,
             // "pivots" => [
             //     $search != false ?
             //     [
@@ -308,6 +322,18 @@ class TransactionController extends Controller
     }
 
     public function storeDraft(Request $request){
+        $user = \Auth::user() != null 
+            ? \Auth::user()
+            : (
+                auth('api')->user() 
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
         /**
          * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
          */
@@ -321,6 +347,8 @@ class TransactionController extends Controller
         }
         // ត្រួតពិនិ្យប្រធានបទនៃការបញ្ជូនឯកសារ
         $subject = strlen( trim($request->subject) ) > 0 ? trim($request->subject) : false ;
+        $objective = strlen( trim($request->objective) ) > 0 ? trim($request->objective) : false ;
+        $subject = $objective ? $objective : false ;
         if( $subject == false ){
             return response()->json([
                 'ok' => false ,
@@ -328,7 +356,7 @@ class TransactionController extends Controller
             ],422);
         }
         // ត្រួតពិនិត្យលេខអ្នកបញ្ជូនឯកសារ
-        $sender = \Auth::user();
+        $sender = $user;
 
         $transaction = RecordModel::create([
             'document_id' => null ,
@@ -336,6 +364,7 @@ class TransactionController extends Controller
             'subject' => $subject ,
             'date_in' => $dateIn->format('Y-m-d H:i:s') ,
             
+            'status' => 'draft' ,
             'created_by' => $sender->id ,
             'updated_by' => $sender->id ,
             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
@@ -366,6 +395,7 @@ class TransactionController extends Controller
         $document = \App\Models\Document\Document::create([
             'public_key' => $public_key ,
             'number' => $number ,
+            'document_type' => intval( $request->document_type ) > 0 ? intval( $request->document_type ) : 0 ,
             'objective' => $objective ,
             'created_by' => $sender->id ,
             'updated_by' => $sender->id ,
@@ -375,23 +405,28 @@ class TransactionController extends Controller
         // ភ្ជាប់ឯកសារទៅកាន់ការបញ្ជូន
         $transaction->update(['document_id'=>$document->id]);
         // ភ្ជាប់អ្នកទទួលបើសិនមាន
-        $receivers = strlen( trim($request->receivers) ) > 0 ? explode(',',trim($request->receivers)) : [] ;
-        if( !empty( $receivers) ){
-            $receivers = \App\Models\User::whereIn('id', $receivers )->get();
-            foreach( $receivers AS $receiver ){
-                $transaction->receivers()->create([
-                    'document_transaction_id' => $transaction->id ,
-                    'receiver_id' => $receiver->id ,
-                    'seen_at' => null ,
-                    'is_download' => null ,
-                    'is_preview' => null ,
-                    'created_by' => $sender->id ,
-                    'updated_by' => $sender->id ,
-                    'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
-                    'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-                ]);
-            }
-        }
+        // $receivers = strlen( trim($request->receivers) ) > 0 ? explode(',',trim($request->receivers)) : [] ;
+        // if( !empty( $receivers) ){
+        //     $receivers = \App\Models\User::whereIn('id', $receivers )->get();
+        //     foreach( $receivers AS $receiver ){
+        //         $transaction->receivers()->create([
+        //             'document_transaction_id' => $transaction->id ,
+        //             'receiver_id' => $receiver->id ,
+        //             'seen_at' => null ,
+        //             'is_download' => null ,
+        //             'is_preview' => null ,
+        //             'created_by' => $sender->id ,
+        //             'updated_by' => $sender->id ,
+        //             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
+        //             'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
+        //         ]);
+        //     }
+        // }
+        return response()->json([
+            'ok' => true ,
+            'record' => $transaction ,
+            'message' => 'ជោគជ័យ'
+        ],200);
     }
     public function changeReceiver(Request $request){
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
@@ -659,6 +694,122 @@ class TransactionController extends Controller
             return response([
                 'ok' => false ,
                 // 'record' => $user ,
+                'message' => 'សូមចូលប្រព័ន្ធជាមុនសិន។'
+            ],403);
+        }
+    }
+    public function uploadFiles(Request $request){
+        $user = \Auth::user() != null 
+            ? \Auth::user()
+            : (
+                auth('api')->user() 
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+        if( $user ){
+            $phpFileUploadErrors = [
+                0 => 'មិនមានបញ្ហាជាមួយឯកសារឡើយ។',
+                1 => "ទំហំឯកសារធំហួសកំណត់ " . ini_get("upload_max_filesize"),
+                2 => 'ទំហំឯកសារធំហួសកំណត់នៃទំរង់បញ្ចូលទិន្នន័យ ' . ini_get('post_max_size'),
+                3 => 'The uploaded file was only partially uploaded',
+                4 => 'No file was uploaded',
+                6 => 'Missing a temporary folder',
+                7 => 'Failed to write file to disk.',
+                8 => 'A PHP extension stopped the file upload.',
+            ];
+            
+            foreach( $_FILES['files']['error'] as $error ){
+                if( $error > 0 ){
+                    return response()->json([
+                        'ok' => false ,
+                        'message' => $phpFileUploadErrors[ $error ]
+                    ],403);
+                }    
+            }
+
+            if( ( $document = \App\Models\Document\Document::find($request->document_id) ) !== null ){
+                $success = [
+                    'pdf' => false ,
+                    'word' => false ,
+                    'extension' => []
+                ];
+                foreach( $_FILES['files']['tmp_name'] AS $index => $file ){
+                    $file_path = $_FILES['files']['tmp_name'][$index];
+
+                    $kbFilesize = round( filesize( $file_path ) / 1024 , 4 );
+                    $mbFilesize = round( $kbFilesize / 1024 , 4 );                   
+
+                    // Get just the filename (without extension)
+                    $filename = $_FILES['files']['name'][$index];
+
+                    // Get just the extension as a string
+                    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+                    // $mimeType = mime_content_type($file_path) ;
+                    // $allowedMimeTypes = [
+                    //     'image/jpeg',
+                    //     'image/png',
+                    //     'image/gif',
+                    //     'application/pdf',
+                    //     'application/msword',
+                    //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    // ];
+                    // $pdfMimeType = [
+                    //     'application/pdf',
+                    // ];
+                    // $wordMimeType = [
+                    //     'application/msword',
+                    //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    // ];
+
+                    if( $extension == 'pdf' ){
+                        $path_to_pdf_file = $document->pdf_file != null && strlen( $document->pdf_file ) > 0 ? $document->pdf_file : false  ;
+                        $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
+                        $document->pdf_file = $uniqeName ;
+                        $document->save();
+                        
+
+                        // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
+                        if( $path_to_pdf_file != false && Storage::disk('public')->exists( $path_to_pdf_file ) ){
+                            Storage::disk('public')->delete( $path_to_pdf_file );
+                        }
+                        if( Storage::disk('public')->exists( $document->pdf_file ) ){
+                            $document->update( [ 'file_pdf_name' => $filename ]);
+                            $success['pdf'] = true;
+                        }
+                    }elseif( $extension == 'doc' || $extension == 'docx' ){
+                        $path_to_word_file = $document->word_file != null && strlen( $document->word_file ) > 0 ? $document->word_file : false  ;
+                        $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
+                        $document->word_file = $uniqeName ;
+                        $document->save();
+                        
+
+                        // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
+                        if( $path_to_word_file != false && Storage::disk('public')->exists( $path_to_word_file ) ){
+                            Storage::disk('public')->delete( $path_to_word_file );
+                        }
+
+                        if( Storage::disk('public')->exists( $document->word_file ) ){
+                            $document->update( [ 'file_word_name' => $filename ]);   
+                            $success['word'] = true;
+                        }
+                    }
+                }
+                return response([
+                    'ok' => true ,
+                    'result' => $success ,
+                    'message' => 'ជោគជ័យក្នុងការភ្ជាប់ឯកសារ។'
+                ],200);
+            }else{
+                return response([
+                    'message' => 'សូមបញ្ជាក់អំពីលេខសម្គាល់របស់ឯកសារយោង។'
+                ],403);
+            }
+        }else{
+            return response([
                 'message' => 'សូមចូលប្រព័ន្ធជាមុនសិន។'
             ],403);
         }

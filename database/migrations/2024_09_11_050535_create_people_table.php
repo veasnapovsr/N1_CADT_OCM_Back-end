@@ -50,15 +50,15 @@ return new class extends Migration
             $table->integer('death')->nullable(true)->default(0);
             $table->integer('body_condition')->nullable(true)->default(0);
             $table->text('body_condition_desp')->nullable(true)->default(0);
- 	    $table->string('father')->nullable(); //added
-	    $table->string('mother')->nullable(); //added
+            $table->string('father')->nullable();  //added
+            $table->string('mother')->nullable();  //added
             $table->timestamps();
             $table->softDeletes();
             $table->integer('created_by')->nullable(true);
             $table->integer('updated_by')->nullable(true);
             $table->integer('deleted_by')->nullable(true);
-            $table->integer('modified_by')->nullable(true); //added
-	    $table->integer('organization_id')->nullable(true)->comment('The organization that people is in');
+            $table->integer('modified_by')->nullable(true);   //added
+            $table->integer('organization_id')->nullable(true)->comment('The organization that people is in');
             $table->integer('countesy_id')->nullable(true)->comment('The countesy of the people');
             $table->integer('position_id')->nullable(true)->comment('The position of the people within the organization');
 

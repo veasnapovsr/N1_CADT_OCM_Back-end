@@ -14,7 +14,12 @@ class RoleController extends Controller
     private $selectFields = [
         'id',
         'name' ,
-        'tag'
+        'tag' ,
+        'sub_role' ,
+        'key_name' ,
+        'khname' , 
+        'enname' ,
+        'sub_role_index'
     ];
     /**
      * Listing function
@@ -24,28 +29,29 @@ class RoleController extends Controller
         $search = isset( $request->search ) && $request->serach !== "" ? $request->search : false ;
         $perPage = isset( $request->perPage ) && $request->perPage !== "" ? $request->perPage : 10 ;
         $page = isset( $request->page ) && $request->page !== "" ? $request->page : 1 ;
+        $tag = isset( $request->tag ) && $request->tag !== "" ? $request->tag : 'client_service' ;
 
         $queryString = [
-            // "where" => [
-            //     'default' => [
-            //         [
-            //             'field' => 'type_id' ,
-            //             'value' => $type === false ? "" : $type
-            //         ]
-            //     ],
-            //     'in' => [] ,
-            //     'not' => [] ,
-            //     'like' => [
-            //         [
-            //             'field' => 'number' ,
-            //             'value' => $number === false ? "" : $number
-            //         ],
-            //         [
-            //             'field' => 'year' ,
-            //             'value' => $date === false ? "" : $date
-            //         ]
-            //     ] ,
-            // ] ,
+            "where" => [
+                'default' => [
+                    [
+                        'field' => 'tag' ,
+                        'value' => $tag
+                    ]
+                ],
+                // 'in' => [] ,
+                // 'not' => [] ,
+                // 'like' => [
+                //     [
+                //         'field' => 'number' ,
+                //         'value' => $number === false ? "" : $number
+                //     ],
+                //     [
+                //         'field' => 'year' ,
+                //         'value' => $date === false ? "" : $date
+                //     ]
+                // ] ,
+            ] ,
             // "pivots" => [
             //     $unit ?
             //     [
@@ -78,12 +84,12 @@ class RoleController extends Controller
             "search" => $search === false ? [] : [
                 'value' => $search ,
                 'fields' => [
-                    'name'
+                    'khname' , 'enname'
                 ]
             ],
             "order" => [
-                'field' => 'id' ,
-                'by' => 'desc'
+                'field' => 'sub_role_index' ,
+                'by' => 'asc'
             ],
         ];
 

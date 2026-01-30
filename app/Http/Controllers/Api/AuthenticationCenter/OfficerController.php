@@ -1541,7 +1541,7 @@ class OfficerController extends Controller
                                     ? \Storage::disk('public')->url( $officer['people']['image'] )
                                     : false 
                                 )
-                    )
+                        )
                     ];
                 })
         ],200);

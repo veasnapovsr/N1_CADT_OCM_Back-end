@@ -502,12 +502,14 @@ class BirthCertificateController extends Controller
                 7 => 'Failed to write file to disk.',
                 8 => 'A PHP extension stopped the file upload.',
             ];
+            
             if( isset( $_FILES['file'] ) && $_FILES['file']['error'] > 0 ){
                 return response()->json([
                     'ok' => false ,
                     'message' => $phpFileUploadErrors[ $_FILES['file']['error'] ]
                 ],403);
             }
+
             $kbFilesize = round( filesize( $_FILES['file']['tmp_name'] ) / 1024 , 4 );
             $mbFilesize = round( $kbFilesize / 1024 , 4 );
             if( ( $certificate = RecordModel::find($request->id) ) !== null ){

@@ -17983,6 +17983,26 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
             ),
             398 => 
             array (
+                'id' => 913,
+                'pid' => 0,
+                'tpid' => '0',
+                'cids' => '914,915',
+                'image' => '',
+                'pdf' => '',
+                'organization_structure_id' => 140,
+                'position_id' => 126,
+                'job_desp' => NULL,
+                'desp' => '',
+                'created_by' => 1,
+                'updated_by' => 1,
+                'deleted_by' => NULL,
+                'created_at' => '2025-12-23 00:00:00',
+                'updated_at' => '2025-12-23 11:01:17',
+                'deleted_at' => NULL,
+                'total_jobs' => NULL,
+            ),
+            399 => 
+            array (
                 'id' => 752,
                 'pid' => 639,
                 'tpid' => '0:637:638:639:',
@@ -18001,7 +18021,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 1,
             ),
-            399 => 
+            400 => 
             array (
                 'id' => 794,
                 'pid' => 793,
@@ -18021,7 +18041,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            400 => 
+            401 => 
             array (
                 'id' => 782,
                 'pid' => 780,
@@ -18041,7 +18061,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            401 => 
+            402 => 
             array (
                 'id' => 240,
                 'pid' => 239,
@@ -18061,7 +18081,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 16,
             ),
-            402 => 
+            403 => 
             array (
                 'id' => 31,
                 'pid' => 29,
@@ -18081,7 +18101,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 31,
             ),
-            403 => 
+            404 => 
             array (
                 'id' => 60,
                 'pid' => 53,
@@ -18101,7 +18121,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 4,
             ),
-            404 => 
+            405 => 
             array (
                 'id' => 765,
                 'pid' => 623,
@@ -18121,7 +18141,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            405 => 
+            406 => 
             array (
                 'id' => 766,
                 'pid' => 623,
@@ -18141,7 +18161,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            406 => 
+            407 => 
             array (
                 'id' => 808,
                 'pid' => 806,
@@ -18161,7 +18181,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            407 => 
+            408 => 
             array (
                 'id' => 769,
                 'pid' => 768,
@@ -18181,7 +18201,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            408 => 
+            409 => 
             array (
                 'id' => 906,
                 'pid' => 361,
@@ -18201,7 +18221,27 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            409 => 
+            410 => 
+            array (
+                'id' => 914,
+                'pid' => 913,
+                'tpid' => '0:913',
+                'cids' => NULL,
+                'image' => '',
+                'pdf' => '',
+                'organization_structure_id' => 140,
+                'position_id' => 179,
+                'job_desp' => NULL,
+                'desp' => '',
+                'created_by' => 1,
+                'updated_by' => 1,
+                'deleted_by' => NULL,
+                'created_at' => '2025-12-23 00:00:00',
+                'updated_at' => '2025-12-23 00:00:00',
+                'deleted_at' => NULL,
+                'total_jobs' => NULL,
+            ),
+            411 => 
             array (
                 'id' => 907,
                 'pid' => 905,
@@ -18221,7 +18261,27 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            410 => 
+            412 => 
+            array (
+                'id' => 915,
+                'pid' => 913,
+                'tpid' => '0:913',
+                'cids' => NULL,
+                'image' => '',
+                'pdf' => '',
+                'organization_structure_id' => 140,
+                'position_id' => 180,
+                'job_desp' => NULL,
+                'desp' => '',
+                'created_by' => 1,
+                'updated_by' => 1,
+                'deleted_by' => NULL,
+                'created_at' => '2025-12-23 00:00:00',
+                'updated_at' => '2025-12-23 00:00:00',
+                'deleted_at' => NULL,
+                'total_jobs' => NULL,
+            ),
+            413 => 
             array (
                 'id' => 908,
                 'pid' => 905,
@@ -18241,7 +18301,7 @@ class OrganizationStructurePositionsTableSeeder extends Seeder
                 'deleted_at' => NULL,
                 'total_jobs' => 0,
             ),
-            411 => 
+            414 => 
             array (
                 'id' => 909,
                 'pid' => 907,

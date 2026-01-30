@@ -43,12 +43,6 @@ class MeetingRegulatorsTableSeeder extends Seeder
                 'meeting_id' => 3,
                 'regulator_id' => 16826,
             ),
-            4 => 
-            array (
-                'id' => 25,
-                'meeting_id' => 198,
-                'regulator_id' => 64845,
-            ),
         ));
         
         

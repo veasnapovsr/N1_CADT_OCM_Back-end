@@ -37,15 +37,6 @@ class RegulatorFolderTableSeeder extends Seeder
                 'updated_at' => '2025-10-07 10:34:01',
                 'deleted_at' => '2025-10-07 10:34:01',
             ),
-            2 => 
-            array (
-                'id' => 4,
-                'regulator_id' => 64845,
-                'folder_id' => 2,
-                'created_at' => '2025-12-11 10:12:13',
-                'updated_at' => '2025-12-11 10:12:13',
-                'deleted_at' => NULL,
-            ),
         ));
         
         

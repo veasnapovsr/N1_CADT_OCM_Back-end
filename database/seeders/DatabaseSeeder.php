@@ -48,7 +48,6 @@ class DatabaseSeeder extends Seeder
         $this->call(OfficerRankByWorkingsTableSeeder::class);
         $this->call(OfficerWorkPendingsTableSeeder::class);
         $this->call(OfficersTableSeeder::class);
-        $this->call(OrganizationRegulatorsTableSeeder::class);
         $this->call(OrganizationStructurePositionsTableSeeder::class);
         $this->call(OrganizationStructuresTableSeeder::class);
         $this->call(OrganizationsTableSeeder::class);
@@ -61,7 +60,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ProvincesTableSeeder::class);
         $this->call(RanksTableSeeder::class);
         $this->call(RegulatorFolderTableSeeder::class);
-        $this->call(RegulatorSignaturesTableSeeder::class);
         $this->call(RegulatorsTableSeeder::class);
         $this->call(RolesTableSeeder::class);
         $this->call(RoomsTableSeeder::class);
@@ -75,6 +73,13 @@ class DatabaseSeeder extends Seeder
         $this->call(UsersTableSeeder::class);
         $this->call(VillagesTableSeeder::class);
         $this->call(WeddingCertificatesTableSeeder::class);
+        $this->call(DocumentTransactionsTableSeeder::class);
+        $this->call(DocumentsTableSeeder::class);
+        $this->call(DocumentBriefingsTableSeeder::class);
+        $this->call(DocumentSignaturesTableSeeder::class);
+        $this->call(DocumentShortSignaturesTableSeeder::class);
+        $this->call(DocumentTransactionReceiversTableSeeder::class);
+        $this->call(OrganizationStructurePositionPermissionsTableSeeder::class);
     }
     
 }

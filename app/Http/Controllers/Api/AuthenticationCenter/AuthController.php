@@ -258,7 +258,7 @@ class AuthController extends Controller
                 // 'phone' => $user->phone ,
                 // 'username' => $user->username ,
                 'roles' => $user->roles->map(function($role){
-                    return collect( $role->toArray() )->only([ 'id' , 'name' , 'guard_name' , 'tag' ] );
+                    return collect( $role->toArray() )->only([ 'id' , 'name' , 'guard_name' , 'tag' , 'sub_role' , 'enname' , 'khname' , 'sub_role_index' ] );
                 }) ,
                 'officer' => $user->officer != null 
                     ? collect( $user->officer->toArray() )->only([ 'id' , 'code' , 'leader' , 'official_date' , 'passport' , 'email' , 'phone' , 'image' , 'job' ])
