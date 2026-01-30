@@ -71,5 +71,9 @@ class Transaction extends Model
         $this->sent_at = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
         $this->save();
     }
+    public function getTimeline(){
+        $ids = $this->where('tpid','like', $this->id . '%' )->pluck('id')->toArray();
+        return $this->whereIn('id', $ids )->get();
+    }
         
 }

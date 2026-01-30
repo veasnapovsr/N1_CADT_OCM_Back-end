@@ -37,7 +37,7 @@ class TransactionController extends Controller
 
         /** Format from query string */
         $search = isset( $request->search ) && $request->search !== "" ? $request->search : false ;
-        $perPage = isset( $request->perPage ) && $request->perPage !== "" ? $request->perPage : 10 ;
+        $perPage = isset( $request->perPage ) && $request->perPage !== "" ? $request->perPage : 20 ;
         $page = isset( $request->page ) && $request->page !== "" ? $request->page : 1 ;
 
         /**
@@ -45,7 +45,7 @@ class TransactionController extends Controller
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
-        $status = isset( $request->status ) & strlen( $request->status ) >3 
+        $status = isset( $request->status ) & strlen( $request->status ) > 3 
             ? (
                 in_array( $request->status , RecordModel::STATUSES ) 
                     ? $request->status 
@@ -179,7 +179,7 @@ class TransactionController extends Controller
 
         $builder = $crud->getListBuilder();
 
-        $builder->whereNull('previous_transaction_id');
+        $builder->whereNull('previous_transaction_id')->orWhere('previous_transaction_id',0);
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
@@ -196,8 +196,18 @@ class TransactionController extends Controller
                     }
                     return $job;
                 });
-                return $record;
             }
+            if( $record['document'] != null ){
+                if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+                    $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+                    // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+                }
+                if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+                    $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+                    // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+                }
+            }
+            return $record;
         });
         $responseData['message'] = __("crud.read.success");
         $responseData['ok'] = true ;
@@ -226,17 +236,17 @@ class TransactionController extends Controller
         }
 
         // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
-        if( ( $receiver = $record->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
-            // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
-            if( $receiver->seen_at == null || strlen( $receiver->seen_at ) <= 0 ){
-                $receiver->update(['seen_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-            }
-        }else{
-            return response()->json([
-                'ok' => false ,
-                'message' => 'អ្នកមិនមានសិទ្ធិក្នុងប្រតិបត្តិការនេះទេ។'
-            ],403);
-        }
+        // if( ( $receiver = $record->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
+        //     // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
+        //     if( $receiver->seen_at == null || strlen( $receiver->seen_at ) <= 0 ){
+        //         $receiver->update(['seen_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+        //     }
+        // }else{
+        //     return response()->json([
+        //         'ok' => false ,
+        //         'message' => 'អ្នកមិនមានសិទ្ធិក្នុងប្រតិបត្តិការនេះទេ។'
+        //     ],403);
+        // }
         
         $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
 
@@ -296,8 +306,17 @@ class TransactionController extends Controller
                     }
                     return $job;
                 });
-                return $record;
             }
+            if( 
+                $record['document'] != null && 
+                $record['document']['pdf_file'] != null && 
+                strlen( $record['document']['pdf_file'] ) > 0 && 
+                \Storage::disk('public')->exists( $record['document']['pdf_file'] ) 
+            ){
+                $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+            }
+            $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
+            return $record;
         });
 
         return response()->json([

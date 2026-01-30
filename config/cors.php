@@ -19,6 +19,7 @@ return [
     'paths' => [
         // 'api/*' 
         // , 'sanctum/csrf-cookie'
+        'storage/*',
         'api/admin/*' ,
         'api/authcenter/*' ,
         'api/meeting/*' ,
