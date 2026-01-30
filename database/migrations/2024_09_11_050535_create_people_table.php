@@ -52,7 +52,6 @@ return new class extends Migration
             $table->text('body_condition_desp')->nullable(true)->default(0);
             $table->string('father')->nullable();  //added
             $table->string('mother')->nullable();  //added
-   
             $table->timestamps();
             $table->softDeletes();
             $table->integer('created_by')->nullable(true);
