@@ -1263,7 +1263,33 @@ class TransactionController extends Controller
          * ការកំណត់ហត្ថលេខាចុងក្រោយត្រូវពឹងផ្អែកលើគោនយោបាយ នៃតួនាទីរបស់ថ្នាក់ដឹកនាំ
          */
     }
-    public function destroy(Request $request){}
+    public function destroy(Request $request){
+        $user = \Auth::user() != null 
+            ? \Auth::user()
+            : (
+                auth('api')->user() 
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
+        $record = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
+        if( $record == null ){
+            return response()->json([
+                'ok' => false ,
+                'record' => $record ,
+                'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
+            ],403);
+        }
+        $result = $record->delete();
+        return response()->json([
+            'ok' => $result ,
+            'message' => $result ? 'រួចរាល់' : 'មានបញ្ហាក្នុងការលប់។' 
+        ],200);
+    }
     public function filterByStatus(Request $request){
         $status = false ;
         if( isset( $request->status ) && strlen( $request->status ) > 0 && in_array( $request->status , RecordModel::STATUSES ) ) {

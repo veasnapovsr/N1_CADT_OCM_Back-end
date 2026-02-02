@@ -19,6 +19,7 @@ Route::group([
       Route::post('draft',[TransactionController::class,'saveDraft']);
       Route::post('send',[TransactionController::class,'send']);
       Route::post('update',[TransactionController::class,'update']);
+      Route::delete('destroy',[TransactionController::class,'destroy']);
 
       // Route::delete('',[TransactionController::class,'destroy']);
       Route::post('upload/word',[TransactionController::class,'uploadWord']);
