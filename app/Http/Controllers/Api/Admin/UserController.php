@@ -131,7 +131,7 @@ class UserController extends Controller
          */
         if( true ){
             $builder->whereHas('roles',function( $query ) {
-                $query->whereIn('role_id',[1,2]);
+                $query->whereNotIn('role_id',[1,2]);
             });
         }
         /**
