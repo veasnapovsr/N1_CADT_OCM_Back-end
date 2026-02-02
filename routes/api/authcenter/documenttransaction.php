@@ -27,6 +27,8 @@ Route::group([
       Route::get('download/{document_id}/pdf',[TransactionController::class,'downloadPdf']);
       Route::get('download/{document_id}/word',[TransactionController::class,'downloadWord']);
       Route::get('preview/{document_id}/pdf',[TransactionController::class,'previewPdf']);
+
+      Route::get('getTotalByStatus',[TransactionController::class,'filterByStatus']);
   });
     
 });
