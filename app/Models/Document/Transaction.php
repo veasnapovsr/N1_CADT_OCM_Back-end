@@ -75,5 +75,5 @@ class Transaction extends Model
         $ids = $this->where('tpid','like', $this->id . '%' )->pluck('id')->toArray();
         return $this->whereIn('id', $ids )->get();
     }
-        
+    
 }

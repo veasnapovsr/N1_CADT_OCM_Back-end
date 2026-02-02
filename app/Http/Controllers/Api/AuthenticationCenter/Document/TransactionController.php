@@ -1295,13 +1295,6 @@ class TransactionController extends Controller
         if( isset( $request->status ) && strlen( $request->status ) > 0 && in_array( $request->status , RecordModel::STATUSES ) ) {
             $status = $request->status ;
         }
-        // else{
-        //     return response()->json([
-        //         'ok' => false ,
-        //         'record' => $request->status ,
-        //         'message' => 'ប្រភេទនៃឯកសារមិនត្រឹមត្រូវ។' 
-        //     ],422);
-        // }
         return response()->json([
             'ok' => true ,
             'records' => $status == false
