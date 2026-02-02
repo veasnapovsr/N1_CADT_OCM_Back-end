@@ -41,7 +41,15 @@ class TransactionController extends Controller
         $page = isset( $request->page ) && $request->page !== "" ? $request->page : 1 ;
 
         /**
-         * Filter conditions
+         * លក្ខណចម្រោះទិន្នន័យ
+         */
+        /**
+         * លក្ខណចម្រោះនៃឯកសារ
+         */
+        $number = isset( $request->number ) && strlen( $request->number ) ? $request->number : false ;
+        $objective = isset( $request->objective ) && strlen( $request->objective ) ? $request->objective : false ;
+        /**
+         * លក្ខណចម្រោះប្រតិបត្តិការបញ្ជូនឯកសារ
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
@@ -53,6 +61,9 @@ class TransactionController extends Controller
             )
             : false ;
 
+        /**
+         * លក្ខណចម្រោះតាមអង្គភាពចុងក្រោយ
+         */
         $queryString = [
             "where" => [
                 'default' => [
@@ -88,35 +99,64 @@ class TransactionController extends Controller
                 //         ] : [] 
                 // ]
             ] ,
-            // "pivots" => [
-            //     $search != false ?
-            //     [
-            //         "relationship" => 'sender',
-            //         "where" => [
-            //             // "in" => [
-            //             //     "field" => "id",
-            //             //     "value" => [$request->unit]
-            //             // ],
-            //             // "not"=> [
-            //             //     [
-            //             //         "field" => 'fieldName' ,
-            //             //         "value"=> 'value'
-            //             //     ]
-            //             // ],
-            //             "like"=>  [
-            //                 [
-            //                     "field"=> 'firstname' ,
-            //                     "value"=> $search
-            //                 ],
-            //                 [
-            //                     "field"=> 'lastname' ,
-            //                     "value"=> $search
-            //                 ]
-            //             ]
-            //         ]
-            //     ]
-            //     : []
-            // ],
+            "pivots" => [
+                $search != false ?
+                [
+                    "relationship" => 'sender',
+                    "where" =>[
+                        // "in" => [
+                        //     "field" => "id",
+                        //     "value" => [$request->unit]
+                        // ],
+                        // "not"=> [
+                        //     [
+                        //         "field" => 'fieldName' ,
+                        //         "value"=> 'value'
+                        //     ]
+                        // ],
+                        "like"=>  [
+                            [
+                                "field"=> 'firstname' ,
+                                "value"=> $search
+                            ],
+                            [
+                                "field"=> 'lastname' ,
+                                "value"=> $search
+                            ]
+                        ]
+                    ]
+                ]
+                : [] ,
+                // Transaction Document
+                $number != false ?
+                [
+                    "relationship" => 'document',
+                    "where" =>[
+                        // "in" => [
+                        //     "field" => "id",
+                        //     "value" => [$request->unit]
+                        // ],
+                        // "not"=> [
+                        //     [
+                        //         "field" => 'fieldName' ,
+                        //         "value"=> 'value'
+                        //     ]
+                        // ],
+                        "like"=>  [
+                            [
+                                "field"=> 'number' ,
+                                "value"=> $number
+                            ],
+                            [
+                                "field"=> 'objective' ,
+                                "value"=> $objective
+                            ],
+                            
+                        ]
+                    ]
+                ]
+                : []
+            ],
             "pagination" => [
                 'perPage' => $perPage,
                 'page' => $page
