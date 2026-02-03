@@ -23,7 +23,7 @@ class TransactionController extends Controller
         'previous_transaction_id' ,
         'next_transaction_id' ,
         'tpid' ,
-        'created_at' , 
+        'created_at' ,
         'updated_at' ,
         'created_by' ,
         'updated_by'
@@ -53,10 +53,10 @@ class TransactionController extends Controller
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
-        $status = isset( $request->status ) & strlen( $request->status ) > 3 
+        $status = isset( $request->status ) & strlen( $request->status ) > 3
             ? (
-                in_array( $request->status , RecordModel::STATUSES ) 
-                    ? $request->status 
+                in_array( $request->status , RecordModel::STATUSES )
+                    ? $request->status
                     : false
             )
             : false ;
@@ -68,12 +68,12 @@ class TransactionController extends Controller
             "where" => [
                 'default' => [
                     $status != false
-                        ? 
+                        ?
                             [
                                 'field' => 'status' ,
                                 'value' => $status
-                            ] 
-                        : 
+                            ]
+                        :
                         [
                             'field' => 'status' ,
                             'value' => null
@@ -96,7 +96,7 @@ class TransactionController extends Controller
                 //         ? [
                 //             'field' => 'date_in' ,
                 //             'value' => $date->format('Y-m-d')
-                //         ] : [] 
+                //         ] : []
                 // ]
             ] ,
             "pivots" => [
@@ -151,7 +151,7 @@ class TransactionController extends Controller
                                 "field"=> 'objective' ,
                                 "value"=> $objective
                             ],
-                            
+
                         ]
                     ]
                 ]
@@ -166,7 +166,7 @@ class TransactionController extends Controller
                     'value' => $search ,
                     'fields' => [
                         'date_in'
-                    ] 
+                    ]
                 ]
             ,
             "order" => [
@@ -182,23 +182,23 @@ class TransactionController extends Controller
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',  
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
                 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 'editor' => [ 'id' , 'firstname' , 'lastname' ]
             ] , //append number properties
-            'sender' => [ 
+            'sender' => [
                 'id' , 'firstname' , 'lastname' , 'avatar_url',
-                'officer' => [ 
+                'officer' => [
                         'id' , 'code' ,
                         // people => [ 'id' , 'firstname' , 'lastname' ]
-                ] 
+                ]
             ] , //append avatar_url properties
             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-            
+
             'previous' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'document' => [
-                   'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                   'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
@@ -206,9 +206,9 @@ class TransactionController extends Controller
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
             'next' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'document' => [
-                    'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                    'id' , 'objective' , 'word_file' , 'pdf_file' ,
                     // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                     // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
@@ -223,7 +223,7 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
-            
+
             // Add two if statement for fullname avatar
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
@@ -260,7 +260,7 @@ class TransactionController extends Controller
             // Add an if statement to respone with filesize
             if( $record['document'] != null ){
                 $record['document']['pdf_file_size'] = 0 ;
-                $record['document']['word_file_size'] = 0 ; 
+                $record['document']['word_file_size'] = 0 ;
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
                     $OriginalPath = $record['document']['pdf_file'];
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
@@ -279,10 +279,10 @@ class TransactionController extends Controller
         return response()->json($responseData, 200);
     }
     public function read(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -312,28 +312,28 @@ class TransactionController extends Controller
         //         'message' => 'អ្នកមិនមានសិទ្ធិក្នុងប្រតិបត្តិការនេះទេ។'
         //     ],403);
         // }
-        
+
         $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
 
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number', 
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 'editor' => [ 'id' , 'firstname' , 'lastname' ]
-            ] , // Add number properties
-            'sender' => [ 
-                'id' , 'firstname' , 'lastname' , 'avatar_url',
-                'officer' => [ 
+            ] ,
+            'sender' => [
+                'id' , 'firstname' , 'lastname' ,
+                'officer' => [
                         'id' , 'code'
-                ] 
-            ] , // Add number properties
+                ]
+            ] ,
             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-            
+
             'previous' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'document' => [
-                   'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                   'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
@@ -341,9 +341,9 @@ class TransactionController extends Controller
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
             'next' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'document' => [
-                    'id' , 'objective' , 'word_file' , 'pdf_file' , 
+                    'id' , 'objective' , 'word_file' , 'pdf_file' ,
                     // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                     // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
@@ -379,29 +379,13 @@ class TransactionController extends Controller
                     return $job;
                 });
             }
-            // if( 
-            //     $record['document'] != null && 
-            //     $record['document']['pdf_file'] != null && 
-            //     strlen( $record['document']['pdf_file'] ) > 0 && 
-            //     \Storage::disk('public')->exists( $record['document']['pdf_file'] ) 
-            // ){
-            //     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-            // }
-
-            // Add an if statement to respone with filesize
-            if( $record['document'] != null ){
-                $record['document']['pdf_file_size'] =  0;
-                $record['document']['word_file_size'] = 0 ; 
-                if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
-                    $OriginalPath = $record['document']['pdf_file'];
-                    $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
-                }
-                if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
-                    $OriginalPath = $record['document']['word_file'];
-                    $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-                    $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;   //uncomment to get filesize
-                }
+            if(
+                $record['document'] != null &&
+                $record['document']['pdf_file'] != null &&
+                strlen( $record['document']['pdf_file'] ) > 0 &&
+                \Storage::disk('public')->exists( $record['document']['pdf_file'] )
+            ){
+                $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
             }
             $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
             return $record;
@@ -417,7 +401,7 @@ class TransactionController extends Controller
     public function store(Request $request){
         $receivers = explode(',',$request->receivers);
         $organizations = explode(',',$request->organizations);
-        if( 
+        if(
             ( is_array( $receivers) && empty( $receivers ) ) ||
             ( is_array( $organizations) && empty( $organizations ) )
         ){
@@ -429,10 +413,10 @@ class TransactionController extends Controller
     }
 
     public function storeDraft(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -470,7 +454,7 @@ class TransactionController extends Controller
             'sender_id' => $sender->id ,
             'subject' => $subject ,
             'date_in' => $dateIn->format('Y-m-d H:i:s') ,
-            
+
             'status' => 'draft' ,
             'created_by' => $sender->id ,
             'updated_by' => $sender->id ,
@@ -481,7 +465,7 @@ class TransactionController extends Controller
         /**
          * បង្កើតឯកសាររួចភ្ជាប់ជាមួយឯកសារដែលបានបញ្ជូនមក
          */
-        // ត្រួតពិនិត្យលេខឯកសារ    
+        // ត្រួតពិនិត្យលេខឯកសារ
         $number = strlen( trim($request->number) ) > 0 ? trim($request->number) : false ;
         if( $number == false ){
             return response()->json([
@@ -541,7 +525,7 @@ class TransactionController extends Controller
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។' 
+                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
         $receiver = intval( $request->receiver_id ) > 0 ? \App\Models\User::find( $request->receiver_id ) : null ;
@@ -592,28 +576,28 @@ class TransactionController extends Controller
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។' 
+                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
         // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន
-        if( 
+        if(
             ( $transaction->document == null  ) ||
             (
                 $transaction->document != null &&
-                ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) && 
+                ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) &&
                 ( $transaction->document->pdf_file == null || strlen( $transaction->document->pdf_file ) <= 0 )
             )
         ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការនេះមិនមានឯកសារយោងភ្ជាប់ជាមួយឡើយ។' 
+                'message' => 'ប្រតិបត្តិការនេះមិនមានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
             ],422);
         }
         // ត្រួតពិនិត្យអ្នកទទួលនៃការបញ្ជូន
         if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការបញ្ជូននេះមិនទាន់មានអ្នកទទួលឡើយ។' 
+                'message' => 'ប្រតិបត្តិការបញ្ជូននេះមិនទាន់មានអ្នកទទួលឡើយ។'
             ],422);
         }
         $transaction->send();
@@ -636,15 +620,15 @@ class TransactionController extends Controller
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
-                'record' => $request->input() , 
-                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។' 
+                'record' => $request->input() ,
+                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
         // ត្រួតពិនិត្យការបញ្ជូនចេញរបស់ឯកសារ
         if( $transaction->sent_at != null && strlen( trim( $transaction->sent_at ) ) > 0 ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ឯកសារបានបញ្ជូនចេញ។ មិនអាចកែប្រែព័ត៌មាននៃការបញ្ជូននេះបានទេ។' 
+                'message' => 'ឯកសារបានបញ្ជូនចេញ។ មិនអាចកែប្រែព័ត៌មាននៃការបញ្ជូននេះបានទេ។'
             ],403);
         }
 
@@ -680,10 +664,10 @@ class TransactionController extends Controller
         ],200);
     }
     public function uploadWord(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -733,7 +717,7 @@ class TransactionController extends Controller
                     'message' => 'មានបញ្ហាជាមួយឯកសារដែលអ្នកបញ្ជូនមក។'
                 ],500);
             }
-            
+
         }else{
             return response([
                 // 'record' => $user ,
@@ -743,10 +727,10 @@ class TransactionController extends Controller
         }
     }
     public function uploadPdf(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -796,7 +780,7 @@ class TransactionController extends Controller
                     'message' => 'មានបញ្ហាជាមួយឯកសារដែលអ្នកបញ្ជូនមក។'
                 ],500);
             }
-            
+
         }else{
             return response([
                 'ok' => false ,
@@ -806,10 +790,10 @@ class TransactionController extends Controller
         }
     }
     public function uploadFiles(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -828,14 +812,14 @@ class TransactionController extends Controller
                 7 => 'Failed to write file to disk.',
                 8 => 'A PHP extension stopped the file upload.',
             ];
-            
+
             foreach( $_FILES['files']['error'] as $error ){
                 if( $error > 0 ){
                     return response()->json([
                         'ok' => false ,
                         'message' => $phpFileUploadErrors[ $error ]
                     ],403);
-                }    
+                }
             }
 
             if( ( $document = \App\Models\Document\Document::find($request->document_id) ) !== null ){
@@ -848,7 +832,7 @@ class TransactionController extends Controller
                     $file_path = $_FILES['files']['tmp_name'][$index];
 
                     $kbFilesize = round( filesize( $file_path ) / 1024 , 4 );
-                    $mbFilesize = round( $kbFilesize / 1024 , 4 );                   
+                    $mbFilesize = round( $kbFilesize / 1024 , 4 );
 
                     // Get just the filename (without extension)
                     $filename = $_FILES['files']['name'][$index];
@@ -877,7 +861,7 @@ class TransactionController extends Controller
                         $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
                         $document->pdf_file = $uniqeName ;
                         $document->save();
-                        
+
 
                         // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
                         if( $path_to_pdf_file != false && Storage::disk('public')->exists( $path_to_pdf_file ) ){
@@ -892,7 +876,7 @@ class TransactionController extends Controller
                         $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $file_path ) );
                         $document->word_file = $uniqeName ;
                         $document->save();
-                        
+
 
                         // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
                         if( $path_to_word_file != false && Storage::disk('public')->exists( $path_to_word_file ) ){
@@ -900,7 +884,7 @@ class TransactionController extends Controller
                         }
 
                         if( Storage::disk('public')->exists( $document->word_file ) ){
-                            $document->update( [ 'file_word_name' => $filename ]);   
+                            $document->update( [ 'file_word_name' => $filename ]);
                             $success['word'] = true;
                         }
                     }
@@ -922,10 +906,10 @@ class TransactionController extends Controller
         }
     }
     public function downloadWord(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -939,7 +923,7 @@ class TransactionController extends Controller
         //     'class' => self::class ,
         //     'func' => __FUNCTION__ ,
         //     'desp' => 'read word file of a document transaction'
-        // ]); 
+        // ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
             // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
@@ -954,11 +938,11 @@ class TransactionController extends Controller
                     'message' => 'អ្នកមិនមានសិទ្ធិទាញយកឯកសារទេ។'
                 ],403);
             }
-            
+
             $path = storage_path('app') . '/public/' . $document->word_file ; // doctransaction/49/ajdf;lakjd;flakjdf.pdf
             // $ext = pathinfo($path);
             // $filename = $document->number . "." . $ext['extension'];
-            
+
             /**   Log the access of the user */
             // if( $user != null ){
             //     \App\Models\Log\Log::regulator([
@@ -970,16 +954,16 @@ class TransactionController extends Controller
 
             if(is_file($path)) {
 
-                $pdfBase64 = base64_encode( 
-                    file_get_contents( 
+                $pdfBase64 = base64_encode(
+                    file_get_contents(
                         storage_path('app') . '/public/' . $document->word_file
-                    ) 
+                    )
                 );
 
                 return response([
                     "pdf" => 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' . $pdfBase64 ,
                     "filename" => $document->file_word_name ,
-                    "ok" => true 
+                    "ok" => true
                 ],200);
             }else
             {
@@ -991,10 +975,10 @@ class TransactionController extends Controller
         }
     }
     public function downloadPdf(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -1008,7 +992,7 @@ class TransactionController extends Controller
             'class' => self::class ,
             'func' => __FUNCTION__ ,
             'desp' => 'read word file of a document transaction'
-        ]); 
+        ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
             // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
@@ -1027,7 +1011,7 @@ class TransactionController extends Controller
             $path = storage_path('app') . '/public/' . $document->word_file ;
             // $ext = pathinfo($path);
             // $filename = $document->number . "." . $ext['extension'];
-            
+
             /**   Log the access of the user */
             // if( $user != null ){
             //     \App\Models\Log\Log::regulator([
@@ -1039,16 +1023,16 @@ class TransactionController extends Controller
 
             if(is_file($path)) {
 
-                $pdfBase64 = base64_encode( 
-                    file_get_contents( 
+                $pdfBase64 = base64_encode(
+                    file_get_contents(
                         storage_path('app') . '/public/' . $document->word_file
-                    ) 
+                    )
                 );
 
                 return response([
                     "pdf" => 'data:application/pdf;base64,' . $pdfBase64 ,
                     "filename" => $document->file_pdf_name ,
-                    "ok" => true 
+                    "ok" => true
                 ],200);
             }else
             {
@@ -1064,10 +1048,10 @@ class TransactionController extends Controller
      * មុនងារមួយនេះនៅមិនទាន់រួចរាល់ត្រង់ចំណុចដាក់ watermark នៅឡើយ
      */
     public function previewPdf(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -1081,7 +1065,7 @@ class TransactionController extends Controller
             'class' => self::class ,
             'func' => __FUNCTION__ ,
             'desp' => 'read word file of a document transaction'
-        ]); 
+        ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
             // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
@@ -1099,7 +1083,7 @@ class TransactionController extends Controller
             $path = storage_path('app') . '/public/' . $document->word_file ;
             // $ext = pathinfo($path);
             // $filename = $document->number . "." . $ext['extension'];
-            
+
             /**   Log the access of the user */
             // if( $user != null ){
             //     \App\Models\Log\Log::regulator([
@@ -1117,13 +1101,13 @@ class TransactionController extends Controller
                 //     $pdf = new Pdf( $pathPdf );
 
                 //     // Specify path to image. The image must have a 96 DPI resolution.
-                //     $watermark = new ImageWatermark( 
-                //         storage_path('data') . 
-                //         '/watermark5.png' 
+                //     $watermark = new ImageWatermark(
+                //         storage_path('data') .
+                //         '/watermark5.png'
                 //     );
 
                 //     // Create a new watermarker
-                //     $watermarker = new PDFWatermarker($pdf, $watermark); 
+                //     $watermarker = new PDFWatermarker($pdf, $watermark);
 
                 //     // Set the position of the watermark including optional X/Y offsets
                 //     // $position = new Position(Position::BOTTOM_CENTER, -50, -10);
@@ -1138,22 +1122,22 @@ class TransactionController extends Controller
                 //     // Only Watermark specific range of pages
                 //     // This would only watermark page 3 and 4
                 //     // $watermarker->setPageRange(3, 4);
-                    
+
                 //     // Save the new PDF to its specified location
                 //     $watermarker->save( storage_path('data') . '/watermarkfiles/' . $document->pdf );
-                // }   
+                // }
 
 
-                $pdfBase64 = base64_encode( 
-                    file_get_contents( 
+                $pdfBase64 = base64_encode(
+                    file_get_contents(
                         storage_path('app') . '/public/' . $document->word_file
-                    ) 
+                    )
                 );
 
                 return response([
                     "pdf" => 'data:application/pdf;base64,' . $pdfBase64 ,
                     "filename" => $document->file_pdf_name ,
-                    "ok" => true 
+                    "ok" => true
                 ],200);
             }else
             {
@@ -1165,10 +1149,10 @@ class TransactionController extends Controller
         }
     }
     public function addBriefing(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -1210,10 +1194,10 @@ class TransactionController extends Controller
     }
     public function accepted(Request $request){
         // អ្នកទទួលការងារក្នុងពេលនេះនិងដើរតួជាអ្នកបញ្ជូននៅប្រតិបត្តិការបន្ទាប់
-        $receiver = \Auth::user() != null 
+        $receiver = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -1232,7 +1216,7 @@ class TransactionController extends Controller
                 'ok' => false ,
                 'previous' => $previousTransaction ,
                 'request' => $request->input() ,
-                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។' 
+                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
 
@@ -1280,7 +1264,7 @@ class TransactionController extends Controller
         /**
          * បង្កើតឯកសាររួចភ្ជាប់ជាមួយឯកសារដែលបានបញ្ជូនមក
          */
-        // ត្រួតពិនិត្យលេខឯកសារ    
+        // ត្រួតពិនិត្យលេខឯកសារ
         $number = $previousTransaction->document->number ;
         $public_key = md5( $number . ( $dateIn != false ? $dateIn->format('YmdHis') : '' ) );
         // ត្រួតពិនិត្យខ្លឹមសារឯកសារ
@@ -1312,10 +1296,10 @@ class TransactionController extends Controller
          */
     }
     public function destroy(Request $request){
-        $user = \Auth::user() != null 
+        $user = \Auth::user() != null
             ? \Auth::user()
             : (
-                auth('api')->user() 
+                auth('api')->user()
                     ? auth('api')->user()
                     : (
                         $request->user() != null
@@ -1335,7 +1319,7 @@ class TransactionController extends Controller
         $result = $record->delete();
         return response()->json([
             'ok' => $result ,
-            'message' => $result ? 'រួចរាល់' : 'មានបញ្ហាក្នុងការលប់។' 
+            'message' => $result ? 'រួចរាល់' : 'មានបញ្ហាក្នុងការលប់។'
         ],200);
     }
     public function filterByStatus(Request $request){
@@ -1347,7 +1331,7 @@ class TransactionController extends Controller
         //     return response()->json([
         //         'ok' => false ,
         //         'record' => $request->status ,
-        //         'message' => 'ប្រភេទនៃឯកសារមិនត្រឹមត្រូវ។' 
+        //         'message' => 'ប្រភេទនៃឯកសារមិនត្រឹមត្រូវ។'
         //     ],422);
         // }
         return response()->json([
@@ -1362,5 +1346,109 @@ class TransactionController extends Controller
                 ]  ,
             'message' => 'រួចរាល់'
         ],200);
+    }
+
+
+    /**
+     * List officers of an organization
+     */
+    public function listOrganizationOfficers(Request $request)
+    {
+        $organizationId = $request->organization_id;
+        if (!$organizationId) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'តម្រូវ​ឱ្យ​មានលេខសម្គាល់អង្គភាព'
+            ], 422);
+        }
+
+        $officers = OrganizationOfficer::active()
+            ->with('officer')
+            ->where('organization_id', $organizationId)
+            ->get();
+
+        return response()->json([
+            'ok' => true,
+            'records' => $officers
+        ], 200);
+    }
+
+    /**
+     * Assign officer to organization
+     */
+    public function assignOfficer(Request $request)
+    {
+        $organizationId = $request->organization_id;
+        $officerId = $request->officer_id;
+
+        if (!$organizationId || !$officerId) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'តម្រូវ​ឱ្យ​មានលេខសម្គាល់អង្គភាព និងលេខសម្គាល់មន្ត្រី​។'
+            ], 422);
+        }
+
+        $record = OrganizationOfficer::create([
+            'organization_id' => $organizationId,
+            'officer_id' => $officerId,
+            'created_by' => Auth::id(),
+            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'record' => $record,
+            'message' => 'បានបន្ថែមមន្ត្រីទៅក្នុងអង្គភាពដោយជោគជ័យ'
+        ], 200);
+    }
+
+    /**
+     * Remove officer from organization (soft delete)
+     */
+    public function removeOfficer(Request $request)
+    {
+        $id = $request->id;
+        if (!$id) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'តម្រូវ​ឱ្យ​មាន​លេខ​សម្គាល់​កំណត់ត្រា។'
+            ], 422);
+        }
+
+        $record = OrganizationOfficer::findOrFail($id);
+        $record->update([
+            'deleted_by' => Auth::id(),
+            'deleted_at' => Carbon::now()->format('Y-m-d H:i:s')
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'មន្ត្រីត្រូវបានដកចេញពីអង្គការ។'
+        ], 200);
+    }
+
+    /**
+     * Restore officer (undo soft delete)
+     */
+    public function restoreOfficer(Request $request)
+    {
+        $id = $request->id;
+        if (!$id) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'តម្រូវ​ឱ្យ​មាន​លេខ​សម្គាល់​កំណត់ត្រា។'
+            ], 422);
+        }
+
+        $record = OrganizationOfficer::findOrFail($id);
+        $record->update([
+            'deleted_by' => null,
+            'deleted_at' => null
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'មន្ត្រីបានស្តារឡើងវិញដោយជោគជ័យ។'
+        ], 200);
     }
 }
