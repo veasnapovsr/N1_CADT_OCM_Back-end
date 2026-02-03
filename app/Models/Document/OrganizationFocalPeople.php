@@ -17,8 +17,8 @@ class OrganizationFocalPeople extends Model
      * ដោយសារក្នុងនេះភ្ជាប់ user នៅទីនេះដោយសារ user គឺជាអ្នកចូលប្រើប្រព័ន្ធ
      * តែ officer ជាមន្ត្រីក្នុងស្ថាប័នដែលត្រូវទទួលការងារជាអ្នកទទួលឯកសារ។
      */
-    public function user(){
-        return $this->belongsTo( \App\Models\User::class , 'user_id' , 'id' );
+    public function officer(){
+        return $this->belongsTo( \App\Models\Officer\Officer::class , 'officer_id' , 'id' );
     }
     
 }

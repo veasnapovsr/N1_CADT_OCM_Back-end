@@ -30,6 +30,8 @@ Route::group([
       Route::get('preview/{document_id}/pdf',[TransactionController::class,'previewPdf']);
 
       Route::get('getTotalByStatus',[TransactionController::class,'filterByStatus']);
+
+      Route::get('setfocal',[TransactionController::class,'setFocalDocument']);
   });
     
 });

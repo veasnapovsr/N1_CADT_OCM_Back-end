@@ -12,8 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('document_transaction_policies', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
+            $table->text('name')->comment('Name of organization');
+            $table->text('keyname')->nullable()->comment('keyname use to diffentiate from others');
+            $table->text('desp')->nullable()->comment('description of organization');
+            $table->text('tpid')->nullable()->comment('The id of the parent which identify the whole type of them.');
+            $table->integer('pid')->nullable()->comment('Parent id of this organization');
+            $table->text('cids')->nullable()->comment('Children IDs will be store here.');
+            $table->string('image', 191)->nullable();
+            $table->integer('record_index')->nullable()->comment('The index of the record');
+            $table->integer('organization_structure_id')->nullable(true)->default(0);
+            $table->integer('officer_id')->nullable(true)->default(0);
+            $table->integer('active')->nullable()->comment('The activation of the record');
+            $table->integer('created_by')->nullable(true);
+            $table->integer('updated_by')->nullable(true);
+            $table->integer('deleted_by')->nullable(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

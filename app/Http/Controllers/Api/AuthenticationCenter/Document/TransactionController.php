@@ -594,7 +594,7 @@ class TransactionController extends Controller
                 'ok' => false ,
                 'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។' 
             ],422);
-        }
+        }   
         // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន
         if( 
             ( $transaction->document == null  ) ||
@@ -1356,4 +1356,5 @@ class TransactionController extends Controller
             'message' => 'រួចរាល់'
         ],200);
     }
+    
 }
