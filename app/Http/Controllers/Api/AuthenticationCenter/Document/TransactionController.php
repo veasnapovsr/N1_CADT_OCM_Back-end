@@ -632,7 +632,7 @@ class TransactionController extends Controller
          * ហើយក្នុងលក្ខណដែលឯកសារមិនទាន់ត្រូវបានបញ្ជូនចេញ
          */
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
-        $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
+        $transaction = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
