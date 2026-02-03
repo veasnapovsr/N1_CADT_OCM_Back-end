@@ -182,17 +182,17 @@ class TransactionController extends Controller
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
                 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 'editor' => [ 'id' , 'firstname' , 'lastname' ]
-            ] ,
+            ] , //append number properties
             'sender' => [
-                'id' , 'firstname' , 'lastname' ,
+                'id' , 'firstname' , 'lastname' , 'avatar_url',
                 'officer' => [
                         'id' , 'code' ,
                         // people => [ 'id' , 'firstname' , 'lastname' ]
                 ]
-            ] ,
+            ] , //append avatar_url properties
             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
 
             'previous' => [
@@ -223,6 +223,15 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
+
+            // Add two if statement for fullname avatar
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+            }
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
+
             if( $record['sender']['officer'] != null ){
                 $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
                 $record['sender']['officer']['people'] = $officer->people;
@@ -237,14 +246,30 @@ class TransactionController extends Controller
                     return $job;
                 });
             }
+            // if( $record['document'] != null ){
+            //     if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+            //         $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+            //         // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+            //     }
+            //     if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+            //         $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+            //         // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+            //     }
+            // }
+
+            // Add an if statement to respone with filesize
             if( $record['document'] != null ){
+                $record['document']['pdf_file_size'] = 0 ;
+                $record['document']['word_file_size'] = 0 ;
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+                    $OriginalPath = $record['document']['pdf_file'];
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-                    // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
                 }
                 if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+                    $OriginalPath = $record['document']['word_file'];
                     $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-                    // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+                    $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;   //uncomment to get filesize
                 }
             }
             return $record;
@@ -333,6 +358,13 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
+            // Add two if state for fullnameand avatarurl
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+            }
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
             if( $record['sender']['officer'] != null ){
                 $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
                 $record['sender']['officer']['people'] = $officer->people;
