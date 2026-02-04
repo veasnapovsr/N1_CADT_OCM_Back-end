@@ -22,7 +22,7 @@ class Receiver extends Model
         return $this->belongsTo( \App\Models\Document\Transaction::class , 'document_transaction_id' , 'id' );
     }
     public function receiver(){
-        return $this->belongsTo( \App\Models\User_id::class , 'user_id' , 'id' );
+        return $this->belongsTo( \App\Models\Officer\Officer::class , 'officer_id' , 'id' );
     }
     /**
      * Functions

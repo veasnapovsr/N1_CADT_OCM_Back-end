@@ -45,7 +45,7 @@ class Transaction extends Model
         return $this->belongsTo( \App\Models\User::class , 'sender_id' , 'id' );
     }
     public function receivers(){
-        return $this->hasManyThrough( \App\Models\User::class , \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
+        return $this->belongsToMany( \App\Models\Officer\Officer::class , \App\Models\Document\Receiver::class , 'document_transaction_id' , 'receiver_id' );
     }
     public function receiversPivot(){
         return $this->hasMany( \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );

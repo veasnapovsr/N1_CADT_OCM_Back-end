@@ -137,24 +137,24 @@ class UserController extends Controller
         /**
          * Positions filter
          */
-        if( $positions ){
-            $builder->whereHas('person',function( $query ) use($positions) {
-                $query->whereHas('positions',function($query) use( $positions ){
-                    $query->whereIn('position_id',$positions);
-                });
-            });
-        }
+        // if( $positions ){
+        //     $builder->whereHas('person',function( $query ) use($positions) {
+        //         $query->whereHas('positions',function($query) use( $positions ){
+        //             $query->whereIn('position_id',$positions);
+        //         });
+        //     });
+        // }
 
         /**
          * Organization filter
          */
-        if( $organizations ){
-            $builder->whereHas('person',function( $query ) use($organizations) {
-                $query->whereHas('organizations',function($query) use( $organizations ){
-                    $query->whereIn('organization_id',$organizations);
-                });
-            });
-        }
+        // if( $organizations ){
+        //     $builder->whereHas('person',function( $query ) use($organizations) {
+        //         $query->whereHas('organizations',function($query) use( $organizations ){
+        //             $query->whereIn('organization_id',$organizations);
+        //         });
+        //     });
+        // }
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($user){

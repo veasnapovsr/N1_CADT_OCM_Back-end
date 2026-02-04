@@ -205,7 +205,9 @@ class TransactionController extends Controller
                         // people => [ 'id' , 'firstname' , 'lastname' ]
                 ]
             ] , //append avatar_url properties
-            'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
+            'receivers' => [ 'id' , 'code' ,
+                'user' => [ 'id' , 'firstname' , 'lastname' , 'email' ]
+             ],
 
             'previous' => [
                 'id' , 'objective' , 'word_file' , 'pdf_file' ,
@@ -1604,35 +1606,35 @@ class TransactionController extends Controller
                 /**
                  * យកជនបង្គោលជាថ្នាក់ដឹកនាំនៃអង្គភាព
                  */
-                if( ( $job = $documentOrganizatoinFocalPerson->officer->jobs()->first() ) != null ){
-                    foreach( $job->getParentIdsInStructure() AS $parentId ){
-                        if( ( $receiver = \App\Models\Document\Receiver::where(
-                            // Find by this
-                            [
-                                'document_transaction_id' => $transaction->id ,
-                                'receiver_id' => $parentId
-                            ]
-                        )->first() ) != null ) {
-                            // កែពេលវេលា និងអ្នកចូលកែ
-                            $receiver->update([
-                                'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
-                                'updated_by' => $user->id
-                            ]);
-                        }else{
-                            // បង្កើតព័ត៌មានថ្មី
-                            \App\Models\Document\Receiver::create(
-                                [
-                                    'document_transaction_id' => $transaction->id ,
-                                    'receiver_id' => $parentId ,
-                                    'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
-                                    'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
-                                    'updated_by' => $user->id ,
-                                    'created_by' => $user->id
-                                ]
-                            );
-                        }
-                    }
-                } 
+                // if( ( $job = $documentOrganizatoinFocalPerson->officer->jobs()->first() ) != null ){
+                //     foreach( $job->getParentIdsInStructure() AS $parentId ){
+                //         if( ( $receiver = \App\Models\Document\Receiver::where(
+                //             // Find by this
+                //             [
+                //                 'document_transaction_id' => $transaction->id ,
+                //                 'receiver_id' => $parentId
+                //             ]
+                //         )->first() ) != null ) {
+                //             // កែពេលវេលា និងអ្នកចូលកែ
+                //             $receiver->update([
+                //                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                //                 'updated_by' => $user->id
+                //             ]);
+                //         }else{
+                //             // បង្កើតព័ត៌មានថ្មី
+                //             \App\Models\Document\Receiver::create(
+                //                 [
+                //                     'document_transaction_id' => $transaction->id ,
+                //                     'receiver_id' => $parentId ,
+                //                     'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                //                     'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                //                     'updated_by' => $user->id ,
+                //                     'created_by' => $user->id
+                //                 ]
+                //             );
+                //         }
+                //     }
+                // } 
             }
         }
     }
