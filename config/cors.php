@@ -36,7 +36,7 @@ return [
         'OPTIONS'
     ],
     'allowed_origins' => 
-    explode( ',' , env('ALLOWED_CORS','http://127.0.0.1:3005,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002' ) )
+    explode( ',' , env('ALLOWED_CORS','http://127.0.0.1:3005,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002,http://127.0.0.1:3009,https://localdoc.ocm.gov.kh' ) )
     // [
     //     // '*' ,
     //     'http://127.0.0.1:3005' , //  Portal UI

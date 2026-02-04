@@ -362,9 +362,9 @@ class TransactionController extends Controller
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
             }
-            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
-                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
-            }
+if (isset($record['sender']['avatar_url']) && !empty($record['sender']['avatar_url']) && \Storage::disk('public')->exists($record['sender']['avatar_url'])) {
+    $record['sender']['avatar_url'] = \Storage::disk('public')->url($record['sender']['avatar_url']);
+}
             if( $record['sender']['officer'] != null ){
                 $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
                 $record['sender']['officer']['people'] = $officer->people;
