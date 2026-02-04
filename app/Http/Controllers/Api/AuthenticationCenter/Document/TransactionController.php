@@ -31,31 +31,6 @@ class TransactionController extends Controller
         'updated_by'
     ];
 
-    private function extractPdfPage($sourcePath, $pageNumber, $outputPath)
-    {
-        $pdf = new Fpdi();
-
-        // Load the source PDF
-        $pageCount = $pdf->setSourceFile($sourcePath);
-
-        // Safety check
-        if ($pageNumber > $pageCount) {
-            throw new \Exception("Page {$pageNumber} does not exist.");
-        }
-
-        // Import the page
-        $templateId = $pdf->importPage($pageNumber);
-        $size = $pdf->getTemplateSize($templateId);
-
-        // Create page with same size
-        $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-        $pdf->useTemplate($templateId);
-
-        // Save to file
-        $pdf->Output($outputPath, 'F');
-
-        return $outputPath;
-    }
 
     /**
      * Listing function
@@ -424,41 +399,9 @@ class TransactionController extends Controller
             // }
             if( $record['document'] != null ){
                 $record['document']['pdf_file_size'] =  0;
-                $record['document']['word_file_size'] = 0 ; 
+                $record['document']['word_file_size'] = 0 ;
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
                     $OriginalPath = $record['document']['pdf_file'];
-
-                    // ✅ FIX: array access, not object
-                    $sourcePath = storage_path(
-                        'app/public/' . $record['document']['pdf_file']
-                    );
-
-                    $outputDir = storage_path('app/public/extracted/');
-
-                    if (!file_exists($outputDir)) {
-                        mkdir($outputDir, 0755, true);
-                    }
-
-                    // ✅ FIX: array access
-                    $outputFilename = 'record_' . $record['id'] . '_page_1.pdf';
-                    $outputPath = $outputDir . $outputFilename;
-
-                    try {
-                        $this->extractPdfPage($sourcePath, 1, $outputPath);
-
-                        // Optional: attach extracted PDF URL to response
-                        $record['document']['extracted_pdf'] = Storage::disk('public')->url(
-                            'extracted/' . $outputFilename
-                        );
-
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'ok' => false,
-                            'message' => $e->getMessage()
-                        ], 500);
-                    }
-
-
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
                     $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
                 }
@@ -593,9 +536,9 @@ class TransactionController extends Controller
         //         ]);
         //     }
         // }
-        
+
         $this->addReceiverBaseOnOrganizationStructure($transaction , 3 );
-        
+
         $transaction->send();
 
         return response()->json([
@@ -680,7 +623,7 @@ class TransactionController extends Controller
         }
         // ត្រួតពិនិត្យអ្នកទទួលនៃការបញ្ជូន
         if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
-                    
+
             return response()->json([
                 'ok' => false ,
                 'message' => 'ប្រតិបត្តិការបញ្ជូននេះមិនទាន់មានអ្នកទទួលឡើយ។'
@@ -1432,8 +1375,8 @@ class TransactionController extends Controller
             'records' => $status == false
                 ? \DB::table('document_transactions')
                     ->select('status', \DB::raw('COUNT(*) as total'))
-                    ->groupBy('status')
-                    ->whereNull( 'deleted_at' )
+                    ->whereNull('deleted_at')
+		    ->groupBy('status')
                     ->get()->pluck('total','status')->toArray()
                 : [
                     $status => RecordModel::whereNull( 'deleted_at' )->where('status', $status )->count()
@@ -1443,108 +1386,115 @@ class TransactionController extends Controller
     }
 
 
-    /**
-     * List officers of an organization
-     */
-    public function listOrganizationOfficers(Request $request)
-    {
-        $organizationId = $request->organization_id;
-        if (!$organizationId) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'តម្រូវ​ឱ្យ​មានលេខសម្គាល់អង្គភាព'
-            ], 422);
-        }
+/**
+ * List focal people rules of an organization
+ */
+public function listOrganizationFocalPeople(Request $request)
+{
+    $builder = OrganizationFocalPeople::with([
+        'organizationStructure',
+        'organizationStructurePosition'
+    ]);
 
-        $officers = OrganizationOfficer::active()
-            ->with('officer')
-            ->where('organization_id', $organizationId)
-            ->get();
-
-        return response()->json([
-            'ok' => true,
-            'records' => $officers
-        ], 200);
+    if ($request->filled('organization_structure_id')) {
+        $builder->where(
+            'organization_structure_id',
+            $request->organization_structure_id
+        );
     }
 
-    /**
-     * Assign officer to organization
-     */
-    public function assignOfficer(Request $request)
-    {
-        $organizationId = $request->organization_id;
-        $officerId = $request->officer_id;
+    return response()->json(
+        $builder->get()
+    );
+}
 
-        if (!$organizationId || !$officerId) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'តម្រូវ​ឱ្យ​មានលេខសម្គាល់អង្គភាព និងលេខសម្គាល់មន្ត្រី​។'
-            ], 422);
-        }
+/**
+ * Assign focal receiver position to organization
+ */
+public function setFocalReceiver(Request $request)
+{
+    $request->validate([
+        'organization_structure_id' => 'required|integer',
+        'organization_structure_position_id' => 'required|integer',
+        'is_default' => 'required|boolean'
+    ]);
 
-        $record = OrganizationOfficer::create([
-            'organization_id' => $organizationId,
-            'officer_id' => $officerId,
-            'created_by' => Auth::id(),
-            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-        ]);
+    $record = OrganizationFocalPeople::create([
+        'organization_structure_id' => $request->organization_structure_id,
+        'organization_structure_position_id' => $request->organization_structure_position_id,
+        'is_default' => $request->is_default,
+        'created_by' => Auth::id(),
+        'updated_by' => Auth::id(),
+    ]);
 
-        return response()->json([
-            'ok' => true,
-            'record' => $record,
-            'message' => 'បានបន្ថែមមន្ត្រីទៅក្នុងអង្គភាពដោយជោគជ័យ'
-        ], 200);
-    }
+    return response()->json([
+        'message' => 'Organization focal receiver configured successfully',
+        'data' => $record
+    ]);
+}
 
-    /**
-     * Remove officer from organization (soft delete)
-     */
-    public function removeOfficer(Request $request)
-    {
-        $id = $request->id;
-        if (!$id) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'តម្រូវ​ឱ្យ​មាន​លេខ​សម្គាល់​កំណត់ត្រា។'
-            ], 422);
-        }
+/**
+ * Update focal receiver rule
+ */
+public function updateFocalReceiver(Request $request, $id)
+{
+    $request->validate([
+        'organization_structure_position_id' => 'required|integer',
+        'is_default' => 'required|boolean'
+    ]);
 
-        $record = OrganizationOfficer::findOrFail($id);
-        $record->update([
-            'deleted_by' => Auth::id(),
-            'deleted_at' => Carbon::now()->format('Y-m-d H:i:s')
-        ]);
+    $record = OrganizationFocalPeople::findOrFail($id);
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'មន្ត្រីត្រូវបានដកចេញពីអង្គការ។'
-        ], 200);
-    }
+    $record->update([
+        'organization_structure_position_id' => $request->organization_structure_position_id,
+        'is_default' => $request->is_default,
+        'updated_by' => Auth::id(),
+    ]);
 
-    /**
-     * Restore officer (undo soft delete)
-     */
-    public function restoreOfficer(Request $request)
-    {
-        $id = $request->id;
-        if (!$id) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'តម្រូវ​ឱ្យ​មាន​លេខ​សម្គាល់​កំណត់ត្រា។'
-            ], 422);
-        }
+    return response()->json([
+        'message' => 'Organization focal receiver updated successfully',
+        'data' => $record
+    ]);
+}
 
-        $record = OrganizationOfficer::findOrFail($id);
-        $record->update([
-            'deleted_by' => null,
-            'deleted_at' => null
-        ]);
+/**
+ * Remove focal receiver rule (soft delete)
+ */
+public function removeFocalReceiver($id)
+{
+    $record = OrganizationFocalPeople::findOrFail($id);
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'មន្ត្រីបានស្តារឡើងវិញដោយជោគជ័យ។'
-        ], 200);
-    }
+    $record->update([
+        'deleted_by' => Auth::id(),
+        'updated_by' => Auth::id(),
+    ]);
+
+    $record->delete();
+
+    return response()->json([
+        'message' => 'Organization focal receiver removed'
+    ]);
+}
+
+/**
+ * Restore focal receiver rule
+ */
+public function restoreFocalReceiver($id)
+{
+    $record = OrganizationFocalPeople::withTrashed()->findOrFail($id);
+
+    $record->restore();
+
+    $record->update([
+        'deleted_by' => null,
+        'updated_by' => Auth::id(),
+    ]);
+
+    return response()->json([
+        'message' => 'Organization focal receiver restored successfully'
+    ]);
+}
+
 
     private function addReceiverBaseOnOrganizationStructure($transaction , $organizationStructureId){
         $user = \Auth::user() != null
@@ -1565,7 +1515,7 @@ class TransactionController extends Controller
          * ហើយសម្រាប់ការមើលឃើញគឺ អាចដល់ នាយករង នាយកខុទ្ទកាល័យ និងឧបនាយករដ្ឋមន្ត្រី
          * សម្រាប់ស្ថានភាពគឺតាមដំណាក់កាល
          */
-        
+
         // Organizatoin -> 3 ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ
         // Officer -> 3604 មន្ត្រីនៅខុទ្ទកាល័យ
         // Officer -> 3048 , 3049 សមាជិកខុទ្ទកាល័យ
@@ -1642,8 +1592,8 @@ class TransactionController extends Controller
                 //             );
                 //         }
                 //     }
-                // } 
+                // }
             }
         }
-    }
+}
 }
