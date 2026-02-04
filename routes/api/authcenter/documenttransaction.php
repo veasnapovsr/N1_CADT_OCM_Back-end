@@ -20,7 +20,8 @@ Route::group([
       Route::post('send',[TransactionController::class,'send']);
       Route::post('update',[TransactionController::class,'update']);
 
-      // Route::delete('',[TransactionController::class,'destroy']);
+      Route::delete('',[TransactionController::class,'destroy']);
+      
       Route::post('upload/word',[TransactionController::class,'uploadWord']);
       Route::post('upload/pdf',[TransactionController::class,'uploadPdf']);
       Route::post('upload/files',[TransactionController::class,'uploadFiles']);
