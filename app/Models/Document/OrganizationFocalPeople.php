@@ -16,7 +16,7 @@ class OrganizationFocalPeople extends Model
             \App\Models\Organization\OrganizationStructure::class,
              'organization_structure_id' , 'id' );
     }
-    
+
     /**
      * គណនីទីនេះគឺត្រូវតែមានភ្ជាប់ជាមួយមន្ត្រី។
      * ដោយសារក្នុងនេះភ្ជាប់ user នៅទីនេះដោយសារ user គឺជាអ្នកចូលប្រើប្រព័ន្ធ
@@ -49,5 +49,5 @@ class OrganizationFocalPeople extends Model
         return $q->whereNull('deleted_at');
     }
 
-    
+
 }

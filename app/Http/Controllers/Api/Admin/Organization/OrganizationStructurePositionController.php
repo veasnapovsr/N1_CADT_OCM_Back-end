@@ -22,7 +22,7 @@ class OrganizationStructurePositionController extends Controller
     public function index(Request $request){
         /** Format from query string */
         $search = isset( $request->search ) && $request->serach !== "" ? $request->search : false ;
-        $perPage = isset( $request->perPage ) && $request->perPage !== "" ? intval( $request->perPage ) : 50 ;
+        $perPage = isset( $request->perPage ) && $request->perPage !== "" ? intval( $request->perPage ) : 1000 ;
         $page = isset( $request->page ) && $request->page !== "" ? intval( $request->page ) : 1 ;
         $organizationStructure = isset( $request->organization_structure_id ) && intval( $request->organization_structure_id ) > 0 ? OrganizationStructure::find( $request->organization_structure_id ) : null ; 
 
