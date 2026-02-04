@@ -74,9 +74,9 @@ class TransactionController extends Controller
             );
 
         /** Format from query string */
-        $search = isset( $request->search ) && $request->search !== "" ? $request->search : false ;
-        $perPage = isset( $request->perPage ) && $request->perPage !== "" ? $request->perPage : 20 ;
-        $page = isset( $request->page ) && $request->page !== "" ? $request->page : 1 ;
+        $search = isset( $request->search ) && strlen( $request->search ) > 0 ? $request->search : false ;
+        $perPage = isset( $request->perPage ) && intval( $request->perPage ) > 0  ? $request->perPage : 20 ;
+        $page = isset( $request->page ) && intval( $request->page ) > 0 ? $request->page : 1 ;
 
         /**
          * លក្ខណចម្រោះទិន្នន័យ
@@ -104,71 +104,71 @@ class TransactionController extends Controller
          * លក្ខណចម្រោះតាមអង្គភាពចុងក្រោយ
          */
         $queryString = [
-            "where" => [
-                'default' => [
-                    $status != false
-                        ?
-                            [
-                                'field' => 'status' ,
-                                'value' => $status
-                            ]
-                        :
-                        [
-                            'field' => 'status' ,
-                            'value' => null
-                        ]
-                ],
-                // 'in' => [
-                //     [
-                //         'field' => 'type' ,
-                //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
-                //     ]
-                // ] ,
-                // 'not' => [
-                //     [
-                //         'field' => 'type' ,
-                //         'value' => [4]
-                //     ]
-                // ] ,
-                // 'like' => [
-                //     $date != false
-                //         ? [
-                //             'field' => 'date_in' ,
-                //             'value' => $date->format('Y-m-d')
-                //         ] : []
-                // ]
-            ] ,
-            "pivots" => [
-                // Transaction Document
-                $number != false ?
-                [
-                    "relationship" => 'document',
-                    "where" =>[
-                        // "in" => [
-                        //     "field" => "id",
-                        //     "value" => [$request->unit]
-                        // ],
-                        // "not"=> [
-                        //     [
-                        //         "field" => 'fieldName' ,
-                        //         "value"=> 'value'
-                        //     ]
-                        // ],
-                        "like"=>  [
-                            [
-                                "field"=> 'number' ,
-                                "value"=> $number
-                            ],
-                            [
-                                "field"=> 'objective' ,
-                                "value"=> $objective
-                            ],
+            // "where" => [
+            //     'default' => [
+            //         $status != false
+            //             ?
+            //                 [
+            //                     'field' => 'status' ,
+            //                     'value' => $status
+            //                 ]
+            //             :
+            //             [
+            //                 'field' => 'status' ,
+            //                 'value' => null
+            //             ]
+            //     ],
+            //     'in' => [
+            //         [
+            //             'field' => 'type' ,
+            //             'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
+            //         ]
+            //     ] ,
+            //     'not' => [
+            //         [
+            //             'field' => 'type' ,
+            //             'value' => [4]
+            //         ]
+            //     ] ,
+            //     'like' => [
+            //         $date != false
+            //             ? [
+            //                 'field' => 'date_in' ,
+            //                 'value' => $date->format('Y-m-d')
+            //             ] : []
+            //     ]
+            // ] ,
+            // "pivots" => [
+            //     // Transaction Document
+            //     $number != false ?
+            //     [
+            //         "relationship" => 'document',
+            //         "where" =>[
+            //             // "in" => [
+            //             //     "field" => "id",
+            //             //     "value" => [$request->unit]
+            //             // ],
+            //             // "not"=> [
+            //             //     [
+            //             //         "field" => 'fieldName' ,
+            //             //         "value"=> 'value'
+            //             //     ]
+            //             // ],
+            //             "like"=>  [
+            //                 [
+            //                     "field"=> 'number' ,
+            //                     "value"=> $number
+            //                 ],
+            //                 [
+            //                     "field"=> 'objective' ,
+            //                     "value"=> $objective
+            //                 ],
 
-                        ]
-                    ]
-                ]
-                : []
-            ],
+            //             ]
+            //         ]
+            //     ]
+            //     : []
+            // ],
             "pagination" => [
                 'perPage' => $perPage,
                 'page' => $page
@@ -205,10 +205,7 @@ class TransactionController extends Controller
                         // people => [ 'id' , 'firstname' , 'lastname' ]
                 ]
             ] , //append avatar_url properties
-            'receivers' => [ 'id' , 'code' ,
-                'user' => [ 'id' , 'firstname' , 'lastname' , 'email' ]
-             ],
-
+            'receivers' => [ 'id' , 'code' ],
             'previous' => [
                 'id' , 'objective' , 'word_file' , 'pdf_file' ,
                 'document' => [
@@ -237,20 +234,31 @@ class TransactionController extends Controller
          * 1. ចម្រោះប្រតិបត្តិការឯកសារដោយយោងតាមអ្នកទទួល
          * 2. ចម្រោះប្រតិបត្តិការឯកសារតាមអ្នកបញ្ជូន
          */
-        //$builder->where( 'sender_id' , $user->id );
-
-        // if( $user != null && $user->id > 0 ){
-        //     $builder->whereHas('receivers',function($queryBuilder) use( $user ){
-        //         $queryBuilder->whereIn('receiver_id', [ $user->id ] );
-        //     })
-        //     ->orWhereIn('officer_id' , [ $user->id ] );
-        // }
-
-        $builder->whereNull('previous_transaction_id')->orWhere('previous_transaction_id',0);
+        $builder->where(function($query){
+            $query->whereNull('previous_transaction_id')
+            ->orWhere('previous_transaction_id',0);
+        })
+        ->where( function($query) use( $user ){
+            $query->where('sender_id' , $user->id )
+            ->orWhereHas('receivers',function($queryBuilder) use( $user ){
+                $queryBuilder->whereIn('receiver_id', [ $user->officer->id ] );
+            });
+        });
 
         $responseData = $crud->pagination(true, $builder);
-        $responseData['records'] = $responseData['records']->map(function($record){
 
+        $responseData['records'] = $responseData['records']->map(function($record){
+            $receivers = collect( $record['receivers'] )->pluck('id')->toArray();
+            $record['receivers'] = \App\Models\Officer\Officer::whereIn( 'id', $receivers )->get()->map(function($receiver){
+                return [
+                    'id' => $receiver->id ,
+                    'code' => $receiver->code ,
+                    'user' => [
+                        'id' => $receiver->user->id ,
+                        'fullname' => ( $receiver->countesy != null ? $receiver->countesy->name : '' ) . ' '. $receiver->user->lastname . ' ' . $receiver->user->firstname
+                    ]
+                ];
+            });
             // Add two if statement for fullname avatar
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
