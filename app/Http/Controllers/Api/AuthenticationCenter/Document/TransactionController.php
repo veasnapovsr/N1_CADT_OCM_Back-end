@@ -1412,6 +1412,7 @@ class TransactionController extends Controller
                 ? \DB::table('document_transactions')
                     ->select('status', \DB::raw('COUNT(*) as total'))
                     ->groupBy('status')
+                    ->whereNull( 'deleted_at' )
                     ->get()->pluck('total','status')->toArray()
                 : [
                     $status => RecordModel::whereNull( 'deleted_at' )->where('status', $status )->count()
