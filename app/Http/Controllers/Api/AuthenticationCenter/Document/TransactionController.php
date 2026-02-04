@@ -31,32 +31,7 @@ class TransactionController extends Controller
         'updated_by'
     ];
 
-    private function extractPdfPage($sourcePath, $pageNumber, $outputPath)
-    {
-        $pdf = new Fpdi();
-
-        // Load the source PDF
-        $pageCount = $pdf->setSourceFile($sourcePath);
-
-        // Safety check
-        if ($pageNumber > $pageCount) {
-            throw new \Exception("Page {$pageNumber} does not exist.");
-        }
-
-        // Import the page
-        $templateId = $pdf->importPage($pageNumber);
-        $size = $pdf->getTemplateSize($templateId);
-
-        // Create page with same size
-        $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-        $pdf->useTemplate($templateId);
-
-        // Save to file
-        $pdf->Output($outputPath, 'F');
-
-        return $outputPath;
-    }
-
+    
     /**
      * Listing function
      */
@@ -419,38 +394,6 @@ class TransactionController extends Controller
                 $record['document']['word_file_size'] = 0 ; 
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
                     $OriginalPath = $record['document']['pdf_file'];
-
-                    // ✅ FIX: array access, not object
-                    $sourcePath = storage_path(
-                        'app/public/' . $record['document']['pdf_file']
-                    );
-
-                    $outputDir = storage_path('app/public/extracted/');
-
-                    if (!file_exists($outputDir)) {
-                        mkdir($outputDir, 0755, true);
-                    }
-
-                    // ✅ FIX: array access
-                    $outputFilename = 'record_' . $record['id'] . '_page_1.pdf';
-                    $outputPath = $outputDir . $outputFilename;
-
-                    try {
-                        $this->extractPdfPage($sourcePath, 1, $outputPath);
-
-                        // Optional: attach extracted PDF URL to response
-                        $record['document']['extracted_pdf'] = Storage::disk('public')->url(
-                            'extracted/' . $outputFilename
-                        );
-
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'ok' => false,
-                            'message' => $e->getMessage()
-                        ], 500);
-                    }
-
-
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
                     $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
                 }
