@@ -14,14 +14,15 @@ class Transaction extends Model
     const STATUS_PROGRESS = 'progress' ;
     const STATUS_FINISHED = 'finished' ;
     const STATUS_CANCELLED = 'cancelled' ;
+    const STAUTS_TRASHED = 'deleted' ;
     const STATUSES = [
         self::STATUS_DRAFT ,
         self::STATUS_SENT ,
         self::STATUS_PROGRESS ,
         self::STATUS_FINISHED ,
-        self::STATUS_CANCELLED
+        self::STATUS_CANCELLED ,
+        self::STAUTS_TRASHED
     ] ;
-
 
     /**
      * ការបញ្ជូនឯកសារត្រូវមានដូចជា៖ 
