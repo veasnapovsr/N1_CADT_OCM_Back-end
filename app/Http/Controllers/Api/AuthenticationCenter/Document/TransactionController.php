@@ -1368,7 +1368,6 @@ class TransactionController extends Controller
          */
     }
     public function destroy(Request $request){
-        console.log($request);
         $user = \Auth::user() != null
             ? \Auth::user()
             : (
