@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\AuthenticationCenter\Document;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Document\Transaction as RecordModel;
+use App\Models\Document\OrganizationFocalPeople;
 use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Collection;
@@ -60,7 +61,17 @@ class TransactionController extends Controller
      * Listing function
      */
     public function index(Request $request){
-        $user = \Auth::user() != null ? \Auth::user() : false ;
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : null
+                    )
+            );
 
         /** Format from query string */
         $search = isset( $request->search ) && $request->search !== "" ? $request->search : false ;
@@ -79,6 +90,7 @@ class TransactionController extends Controller
          * លក្ខណចម្រោះប្រតិបត្តិការបញ្ជូនឯកសារ
          */
         $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
+
         $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
         $status = isset( $request->status ) & strlen( $request->status ) > 3
             ? (
@@ -127,33 +139,6 @@ class TransactionController extends Controller
                 // ]
             ] ,
             "pivots" => [
-                $search != false ?
-                [
-                    "relationship" => 'sender',
-                    "where" =>[
-                        // "in" => [
-                        //     "field" => "id",
-                        //     "value" => [$request->unit]
-                        // ],
-                        // "not"=> [
-                        //     [
-                        //         "field" => 'fieldName' ,
-                        //         "value"=> 'value'
-                        //     ]
-                        // ],
-                        "like"=>  [
-                            [
-                                "field"=> 'firstname' ,
-                                "value"=> $search
-                            ],
-                            [
-                                "field"=> 'lastname' ,
-                                "value"=> $search
-                            ]
-                        ]
-                    ]
-                ]
-                : [] ,
                 // Transaction Document
                 $number != false ?
                 [
@@ -245,6 +230,19 @@ class TransactionController extends Controller
         ]);
 
         $builder = $crud->getListBuilder();
+
+        /**
+         * 1. ចម្រោះប្រតិបត្តិការឯកសារដោយយោងតាមអ្នកទទួល
+         * 2. ចម្រោះប្រតិបត្តិការឯកសារតាមអ្នកបញ្ជូន
+         */
+        //$builder->where( 'sender_id' , $user->id );
+
+        // if( $user != null && $user->id > 0 ){
+        //     $builder->whereHas('receivers',function($queryBuilder) use( $user ){
+        //         $queryBuilder->whereIn('receiver_id', [ $user->id ] );
+        //     })
+        //     ->orWhereIn('officer_id' , [ $user->id ] );
+        // }
 
         $builder->whereNull('previous_transaction_id')->orWhere('previous_transaction_id',0);
 
@@ -585,6 +583,11 @@ class TransactionController extends Controller
         //         ]);
         //     }
         // }
+        
+        $this->addReceiverBaseOnOrganizationStructure($transaction , 3 );
+        
+        $transaction->send();
+
         return response()->json([
             'ok' => true ,
             'record' => $transaction ,
@@ -667,11 +670,19 @@ class TransactionController extends Controller
         }
         // ត្រួតពិនិត្យអ្នកទទួលនៃការបញ្ជូន
         if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
+                    
             return response()->json([
                 'ok' => false ,
                 'message' => 'ប្រតិបត្តិការបញ្ជូននេះមិនទាន់មានអ្នកទទួលឡើយ។'
             ],422);
         }
+        if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
+            return response()->json([
+                'ok' => false ,
+                'message' => 'មិនមានបញ្ជាក់អង្គភាពទទួល និងអ្នកទទួល។'
+            ],500);
+        }
+
         $transaction->send();
         // ជូនដំណឹងទៅអ្នកទទួល។ ការងារនេះនិងបន្តនៅពេលក្រោយ។
         return response()->json([
@@ -1522,5 +1533,106 @@ class TransactionController extends Controller
             'ok' => true,
             'message' => 'មន្ត្រីបានស្តារឡើងវិញដោយជោគជ័យ។'
         ], 200);
+    }
+
+    private function addReceiverBaseOnOrganizationStructure($transaction , $organizationStructureId){
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+        /**
+         * កំណត់អ្នកទទួលឯកសារ
+         * ចាប់យកខុទ្ទកាល័យឧបនាយករដ្ឋមន្ត្រីប្រចាំការជាកន្លែងគោល
+         * តែឯកសារនឹងត្រូវបានទៅអ្នកទទួលឯកសារ
+         * ហើយសម្រាប់ការមើលឃើញគឺ អាចដល់ នាយករង នាយកខុទ្ទកាល័យ និងឧបនាយករដ្ឋមន្ត្រី
+         * សម្រាប់ស្ថានភាពគឺតាមដំណាក់កាល
+         */
+        
+        // Organizatoin -> 3 ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ
+        // Officer -> 3604 មន្ត្រីនៅខុទ្ទកាល័យ
+        // Officer -> 3048 , 3049 សមាជិកខុទ្ទកាល័យ
+        // Officer -> 2484 ជំនួយការឧបនាយករដ្ឋមន្ត្រី
+        /**
+         * Focal People
+         * Organizatoin Structure -> 3
+         * Officer -> 3604 , 3048 , 3049 , 2484 , 172 (eng.touch)
+         * បានបង្កើតជនបង្គោលសម្រាប់ថ្នាក់
+         * ១. ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ
+         * ២. អគ្គនាយកដ្ឋានបរិវត្តកម្មឌីជីថល
+         * ៣. នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល
+         */
+        // $organizatoinStructureId = 3 ;
+
+        /**
+         * ក្នុងករណីដែលមានការកំណត់ជាក់លាក់នូវជនបង្គោលសម្រាប់ទទួលយកឯកសារចូល
+         */
+        if( ( $documentOrganizatoinFocalPeople = \App\Models\Document\OrganizationFocalPeople::where('organization_structure_id', $organizationStructureId )->get() ) != null ){
+            foreach( $documentOrganizatoinFocalPeople AS $index => $documentOrganizatoinFocalPerson ){
+                if( ( $receiver = \App\Models\Document\Receiver::where(
+                    // Find by this
+                    [
+                        'document_transaction_id' => $transaction->id ,
+                        'receiver_id' => $documentOrganizatoinFocalPerson->officer_id
+                    ]
+                )->first() ) != null ) {
+                    // កែពេលវេលា និងអ្នកចូលកែ
+                    $receiver->update([
+                        'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                        'updated_by' => $user->id
+                    ]);
+                }else{
+                    // បង្កើតព័ត៌មានថ្មី
+                    \App\Models\Document\Receiver::create(
+                        [
+                            'document_transaction_id' => $transaction->id ,
+                            'receiver_id' => $documentOrganizatoinFocalPerson->officer_id ,
+                            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                            'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                            'updated_by' => $user->id ,
+                            'created_by' => $user->id
+                        ]
+                    );
+                }
+                /**
+                 * យកជនបង្គោលជាថ្នាក់ដឹកនាំនៃអង្គភាព
+                 */
+                if( ( $job = $documentOrganizatoinFocalPerson->officer->jobs()->first() ) != null ){
+                    foreach( $job->getParentIdsInStructure() AS $parentId ){
+                        if( ( $receiver = \App\Models\Document\Receiver::where(
+                            // Find by this
+                            [
+                                'document_transaction_id' => $transaction->id ,
+                                'receiver_id' => $parentId
+                            ]
+                        )->first() ) != null ) {
+                            // កែពេលវេលា និងអ្នកចូលកែ
+                            $receiver->update([
+                                'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                                'updated_by' => $user->id
+                            ]);
+                        }else{
+                            // បង្កើតព័ត៌មានថ្មី
+                            \App\Models\Document\Receiver::create(
+                                [
+                                    'document_transaction_id' => $transaction->id ,
+                                    'receiver_id' => $parentId ,
+                                    'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                                    'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
+                                    'updated_by' => $user->id ,
+                                    'created_by' => $user->id
+                                ]
+                            );
+                        }
+                    }
+                } 
+            }
+        }
     }
 }

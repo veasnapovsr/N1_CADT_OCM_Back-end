@@ -27,4 +27,28 @@ class OfficerJob extends Model
             ? Carbon::parse( $this->start )->diffInDays( strlen( $this->end ) > 0 ? Carbon::parse( $this->end ) : Carbon::now() )
             : 0 ;
     }
+    /**
+     * មុខងារចាប់យករចនាសម្ព័ន្ធនៃតួនាទី
+     */
+    public function getParentIdsInStructure(){
+        /**
+         * លេខសម្គាល់ថ្នាក់ដឹកនាំក្នុងអង្គភាព
+         */
+        $parentIds = [];
+        if( $this->organizationStructurePosition != null ){
+            $parentIds = array_filter( explode(':',$this->organizationStructurePosition->tpid) , function($id){ return intval( $id ) > 0 ;} );
+        }
+        /**
+         * លេខសម្គាល់ថ្នាក់ដឹកនាំក្នុងស្ថាប័នទាំងមូល
+         */
+        $organizatoinStructgureIds = [] ;
+        if( $this->organizationStructurePosition->organizatoinStructure != null ){
+            $organizatoinStructgureIds = array_filter( function($id){ return intval( $id ) > 0 ;} , explode(':',$this->organizationStructurePosition->organizatoinStructure->tpid) );
+            /**
+             * អាចយកលេខសម្គាល់នៃអង្គភាពនីមួយដែលជាឋានានុក្រុមខាងលើនៃ អង្គភាពបច្ចុប្បដែលតួនាទីរបស់មន្ត្រីនៅ
+             */
+        }
+
+        return $parentIds ;
+    }
 }

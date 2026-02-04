@@ -16,7 +16,7 @@ class ShortSignature extends Model
     public function document(){
         return $this->belongsTo( \App\Models\Document\Document::class , 'document_id' , 'id' );
     }
-    public function user(){
+    public function signer(){
         return $this->belongsTo( \App\Models\User::class , 'user_id' , 'id' );
     }
 }
