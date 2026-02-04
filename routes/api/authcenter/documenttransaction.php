@@ -15,8 +15,9 @@ Route::group([
       Route::get('',[TransactionController::class,'index']);
       Route::get('{id}/read',[TransactionController::class,'read']);
       Route::get('{id}/accept',[TransactionController::class,'accepted']);
-      Route::post('create',[TransactionController::class,'store']);
-      Route::post('draft',[TransactionController::class,'saveDraft']);
+      // Route::post('create',[TransactionController::class,'store']);
+      Route::post('create',[TransactionController::class,'storeDraft']);
+      Route::post('draft',[TransactionController::class,'storeDraft']);
       Route::post('send',[TransactionController::class,'send']);
       Route::post('update',[TransactionController::class,'update']);
 

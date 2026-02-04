@@ -11,12 +11,14 @@ class Transaction extends Model
     protected $guarded = ['id'] ;
     const STATUS_DRAFT = 'draft' ;
     const STATUS_SENT = 'sent' ;
+    const STATUS_PENDING = 'pending' ;
     const STATUS_PROGRESS = 'progress' ;
     const STATUS_FINISHED = 'finished' ;
     const STATUS_CANCELLED = 'cancelled' ;
     const STAUTS_TRASHED = 'deleted' ;
     const STATUSES = [
         self::STATUS_DRAFT ,
+        self::STATUS_PENDING ,
         self::STATUS_SENT ,
         self::STATUS_PROGRESS ,
         self::STATUS_FINISHED ,
@@ -43,7 +45,7 @@ class Transaction extends Model
         return $this->belongsTo( \App\Models\User::class , 'sender_id' , 'id' );
     }
     public function receivers(){
-        return $this->hasManyThrough( \App\Models\User::class , \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
+        return $this->belongsToMany( \App\Models\Officer\Officer::class , \App\Models\Document\Receiver::class , 'document_transaction_id' , 'receiver_id' );
     }
     public function receiversPivot(){
         return $this->hasMany( \App\Models\Document\Receiver::class , 'document_transaction_id' , 'id' );
@@ -70,6 +72,8 @@ class Transaction extends Model
             'status' => 'sent'
         ]);
         $this->sent_at = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+        // $this->status = self::STATUS_PROGRESS ;
+        $this->status = self::STATUS_PENDING ;
         $this->save();
     }
     public function getTimeline(){

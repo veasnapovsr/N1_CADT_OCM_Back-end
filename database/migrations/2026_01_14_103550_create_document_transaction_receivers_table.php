@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('download_at',50)->nullable(true);
             $table->string('preview_at',50)->nullable(true);
             $table->integer('document_transaction_id')->nullable(false)->default(0);
-            $table->integer('organization_id')->nullable(true)->default(0)->comment('The id of the organization');
-            $table->integer('receiver_id')->nullable(true)->default(0)->comment('The id of the receiver');
+            $table->integer('organization_structure_id')->nullable(true)->default(0)->comment('The id of the organization');
+            $table->integer('receiver_id')->nullable(true)->default(0)->comment('The id of the receiver is id of user because user is the one who use system.');
             $table->integer('created_by')->default(0)->comment('Author of the record');
             $table->integer('updated_by')->default(0)->comment('Editor of the record');
             $table->integer('deleted_by')->default(0)->comment('Destroyer of the record');
