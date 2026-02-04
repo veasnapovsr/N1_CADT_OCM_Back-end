@@ -9,6 +9,7 @@ use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use setasign\Fpdi\Fpdi;
 
 class TransactionController extends Controller
 {
@@ -28,6 +29,32 @@ class TransactionController extends Controller
         'created_by' ,
         'updated_by'
     ];
+
+    private function extractPdfPage($sourcePath, $pageNumber, $outputPath)
+    {
+        $pdf = new Fpdi();
+
+        // Load the source PDF
+        $pageCount = $pdf->setSourceFile($sourcePath);
+
+        // Safety check
+        if ($pageNumber > $pageCount) {
+            throw new \Exception("Page {$pageNumber} does not exist.");
+        }
+
+        // Import the page
+        $templateId = $pdf->importPage($pageNumber);
+        $size = $pdf->getTemplateSize($templateId);
+
+        // Create page with same size
+        $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+        $pdf->useTemplate($templateId);
+
+        // Save to file
+        $pdf->Output($outputPath, 'F');
+
+        return $outputPath;
+    }
 
     /**
      * Listing function
@@ -182,17 +209,17 @@ class TransactionController extends Controller
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
                 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 'editor' => [ 'id' , 'firstname' , 'lastname' ]
-            ] ,
+            ] , //append number properties
             'sender' => [
-                'id' , 'firstname' , 'lastname' ,
+                'id' , 'firstname' , 'lastname' , 'avatar_url',
                 'officer' => [
                         'id' , 'code' ,
                         // people => [ 'id' , 'firstname' , 'lastname' ]
                 ]
-            ] ,
+            ] , //append avatar_url properties
             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
 
             'previous' => [
@@ -223,6 +250,15 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
+
+            // Add two if statement for fullname avatar
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+            }
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
+
             if( $record['sender']['officer'] != null ){
                 $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
                 $record['sender']['officer']['people'] = $officer->people;
@@ -237,14 +273,30 @@ class TransactionController extends Controller
                     return $job;
                 });
             }
+            // if( $record['document'] != null ){
+            //     if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+            //         $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+            //         // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+            //     }
+            //     if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+            //         $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+            //         // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+            //     }
+            // }
+
+            // Add an if statement to respone with filesize
             if( $record['document'] != null ){
+                $record['document']['pdf_file_size'] = 0 ;
+                $record['document']['word_file_size'] = 0 ;
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+                    $OriginalPath = $record['document']['pdf_file'];
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-                    // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
                 }
                 if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+                    $OriginalPath = $record['document']['word_file'];
                     $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-                    // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+                    $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;   //uncomment to get filesize
                 }
             }
             return $record;
@@ -293,12 +345,12 @@ class TransactionController extends Controller
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
                 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 'editor' => [ 'id' , 'firstname' , 'lastname' ]
             ] ,
             'sender' => [
-                'id' , 'firstname' , 'lastname' ,
+                'id' , 'firstname' , 'lastname' , 'avatar_url',
                 'officer' => [
                         'id' , 'code'
                 ]
@@ -333,36 +385,80 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
-
-        // Add two if state for fullnameand avatarurl
-        if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
-            $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
-        }
-	if (isset($record['sender']['avatar_url']) && !empty($record['sender']['avatar_url']) && \Storage::disk('public')->exists($record['sender']['avatar_url'])) {
-	    $record['sender']['avatar_url'] = \Storage::disk('public')->url($record['sender']['avatar_url']);
-	}
-
-        if( $record['sender']['officer'] != null ){
-           $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
-           $record['sender']['officer']['people'] = $officer->people;
-           $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
-                $job->countesy;
-                if( $job->organizationStructurePosition != null ){
-                    $job->organizationStructurePosition->position;
-                    if( $job->organizationStructurePosition->organizationStructure != null ){
-                        $job->organizationStructurePosition->organizationStructure->organization;
+            // Add two if state for fullnameand avatarurl
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+            }
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
+            if( $record['sender']['officer'] != null ){
+                $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
+                $record['sender']['officer']['people'] = $officer->people;
+                $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
+                    $job->countesy;
+                    if( $job->organizationStructurePosition != null ){
+                        $job->organizationStructurePosition->position;
+                        if( $job->organizationStructurePosition->organizationStructure != null ){
+                            $job->organizationStructurePosition->organizationStructure->organization;
+                        }
                     }
+                    return $job;
+                });
+            }
+            // if(
+            //     $record['document'] != null &&
+            //     $record['document']['pdf_file'] != null &&
+            //     strlen( $record['document']['pdf_file'] ) > 0 &&
+            //     \Storage::disk('public')->exists( $record['document']['pdf_file'] )
+            // ){
+            //     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+            // }
+            if( $record['document'] != null ){
+                $record['document']['pdf_file_size'] =  0;
+                $record['document']['word_file_size'] = 0 ; 
+                if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+                    $OriginalPath = $record['document']['pdf_file'];
+
+                    // ✅ FIX: array access, not object
+                    $sourcePath = storage_path(
+                        'app/public/' . $record['document']['pdf_file']
+                    );
+
+                    $outputDir = storage_path('app/public/extracted/');
+
+                    if (!file_exists($outputDir)) {
+                        mkdir($outputDir, 0755, true);
+                    }
+
+                    // ✅ FIX: array access
+                    $outputFilename = 'record_' . $record['id'] . '_page_1.pdf';
+                    $outputPath = $outputDir . $outputFilename;
+
+                    try {
+                        $this->extractPdfPage($sourcePath, 1, $outputPath);
+
+                        // Optional: attach extracted PDF URL to response
+                        $record['document']['extracted_pdf'] = Storage::disk('public')->url(
+                            'extracted/' . $outputFilename
+                        );
+
+                    } catch (\Exception $e) {
+                        return response()->json([
+                            'ok' => false,
+                            'message' => $e->getMessage()
+                        ], 500);
+                    }
+
+
+                    $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
                 }
-                return $job;
-            });
-          }
-          if(
-            $record['document'] != null &&
-             $record['document']['pdf_file'] != null &&
-             strlen( $record['document']['pdf_file'] ) > 0 &&
-             \Storage::disk('public')->exists( $record['document']['pdf_file'] )
-         ){
-                $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+                if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+                    $OriginalPath = $record['document']['word_file'];
+                    $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+                    $record['document']['word_file_size'] = round( \Storage::disk('public')->path( $OriginalPath ) / 1024, 2) . " KB" ;   //uncomment to get filesize
+                }
             }
             $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
             return $record;
@@ -401,7 +497,6 @@ class TransactionController extends Controller
                             : 0
                     )
             );
-
         /**
          * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
          */
@@ -593,7 +688,7 @@ class TransactionController extends Controller
          * ហើយក្នុងលក្ខណដែលឯកសារមិនទាន់ត្រូវបានបញ្ជូនចេញ
          */
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
-        $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
+        $transaction = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
@@ -1272,7 +1367,33 @@ class TransactionController extends Controller
          * ការកំណត់ហត្ថលេខាចុងក្រោយត្រូវពឹងផ្អែកលើគោនយោបាយ នៃតួនាទីរបស់ថ្នាក់ដឹកនាំ
          */
     }
-    public function destroy(Request $request){}
+    public function destroy(Request $request){
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
+        $record = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
+        if( $record == null ){
+            return response()->json([
+                'ok' => false ,
+                'record' => $record ,
+                'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
+            ],403);
+        }
+        $result = $record->delete();
+        return response()->json([
+            'ok' => $result ,
+            'message' => $result ? 'រួចរាល់' : 'មានបញ្ហាក្នុងការលប់។'
+        ],200);
+    }
     public function filterByStatus(Request $request){
         $status = false ;
         if( isset( $request->status ) && strlen( $request->status ) > 0 && in_array( $request->status , RecordModel::STATUSES ) ) {
@@ -1298,6 +1419,7 @@ class TransactionController extends Controller
             'message' => 'រួចរាល់'
         ],200);
     }
+
 
     /**
      * List officers of an organization
@@ -1401,5 +1523,4 @@ class TransactionController extends Controller
             'message' => 'មន្ត្រីបានស្តារឡើងវិញដោយជោគជ័យ។'
         ], 200);
     }
-
 }
