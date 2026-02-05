@@ -289,184 +289,102 @@ class TransactionController extends Controller
     //     $responseData['ok'] = true ;
     //     return response()->json($responseData, 200);
     // }
-    public function index(Request $request){
-    $user = \Auth::user() != null
-        ? \Auth::user()
-        : (
-            auth('api')->user()
-                ? auth('api')->user()
-                : (
-                    $request->user() != null
-                        ? $request->user()
-                        : null
-                )
-        );
 
-    /** Format from query string */
-    $search = isset($request->search) && strlen($request->search) > 0 ? $request->search : false;
-    $perPage = isset($request->perPage) && intval($request->perPage) > 0 ? $request->perPage : 20;
-    $page = isset($request->page) && intval($request->page) > 0 ? $request->page : 1;
-
-    /**
-     * លក្ខណចម្រោះនៃឯកសារ
-     */
-    $number = isset($request->number) && strlen($request->number) ? $request->number : false;
-    $objective = isset($request->objective) && strlen($request->objective) ? $request->objective : false;
-
-    /**
-     * លក្ខណចម្រោះប្រតិបត្តិការបញ្ជូនឯកសារ
-     */
-    $sender_id = isset($request->sender_id) && intval($request->sender_id) > 0 ? $request->sender_id : false;
-
-    $date = isset($request->date) & strlen($request->date) >= 10
-        ? \Carbon\Carbon::parse($request->date)
-        : false;
-
-    $status = isset($request->status) & strlen($request->status) > 3
-        ? (in_array($request->status, RecordModel::STATUSES) ? $request->status : false)
-        : false;
-
-    $queryString = [
-        "pagination" => [
-            'perPage' => $perPage,
-            'page' => $page
-        ],
-        "search" => $search === false ? [] : [
-            'value' => $search,
-            'fields' => ['date_in']
-        ],
-        "order" => [
-            'field' => 'date_in',
-            'by' => 'desc'
-        ],
-    ];
-
-    $request->merge($queryString);
+    public function index(Request $request)
+{
+    $user = \Auth::user()
+        ?? auth('api')->user()
+        ?? $request->user()
+        ?? null;
 
     $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
 
     $crud->setRelationshipFunctions([
         'document' => [
-            'id','objective','word_file','pdf_file','number',
-            'author' => ['id','firstname','lastname'],
-            'editor' => ['id','firstname','lastname']
+            'id','objective','word_file','pdf_file','number'
         ],
         'sender' => [
             'id','firstname','lastname','avatar_url',
-            'officer' => [
-                'id','code','countesy_id' // ✅ FIX: countesy_id from officer
-            ]
+            'officer' => ['id','code']
         ],
         'receivers' => ['id','code'],
         'previous' => [
             'id','objective','word_file','pdf_file',
-            'document' => ['id','objective','word_file','pdf_file'],
-            'sender' => ['id','firstname','lastname','countesy_id'],
+            'sender' => ['id','firstname','lastname'],
             'receivers' => ['id','firstname','lastname'],
         ],
         'next' => [
             'id','objective','word_file','pdf_file',
-            'document' => ['id','objective','word_file','pdf_file'],
-            'sender' => ['id','firstname','lastname','countesy_id'],
+            'sender' => ['id','firstname','lastname'],
             'receivers' => ['id','firstname','lastname'],
         ],
     ]);
 
     $builder = $crud->getListBuilder();
 
-    $builder->where(function($query){
+    $builder->where(function ($query) {
         $query->whereNull('previous_transaction_id')
               ->orWhere('previous_transaction_id', 0);
     })
-    ->where(function($query) use ($user){
+    ->where(function ($query) use ($user) {
         $query->where('sender_id', $user->id)
-              ->orWhereHas('receivers', function($q) use ($user){
+              ->orWhereHas('receivers', function ($q) use ($user) {
                   $q->whereIn('receiver_id', [$user->officer->id]);
               });
     });
 
     $responseData = $crud->pagination(true, $builder);
 
-    $responseData['records'] = $responseData['records']->map(function($record){
+    $responseData['records'] = $responseData['records']->map(function ($record) {
 
-        $receivers = collect($record['receivers'])->pluck('id')->toArray();
-        $record['receivers'] = \App\Models\Officer\Officer::whereIn('id', $receivers)->get()->map(function($receiver){
-            return [
-                'id' => $receiver->id,
-                'code' => $receiver->code,
-                'user' => [
-                    'id' => $receiver->user->id,
-                    'fullname' =>
-                        ($receiver->countesy != null ? $receiver->countesy->name : '') . ' ' .
-                        $receiver->user->lastname . ' ' .
-                        $receiver->user->firstname
-                ]
-            ];
-        });
-
-        if($record['sender']['firstname'] && $record['sender']['lastname']){
+        /** Sender fullname */
+        if (!empty($record['sender']['firstname']) && !empty($record['sender']['lastname'])) {
             $record['sender']['fullname'] =
                 $record['sender']['lastname'].' '.$record['sender']['firstname'];
         }
 
-        if($record['sender']['avatar_url'] &&
-            \Storage::disk('public')->exists($record['sender']['avatar_url'])){
+        /** Sender avatar */
+        if (!empty($record['sender']['avatar_url']) &&
+            \Storage::disk('public')->exists($record['sender']['avatar_url'])) {
             $record['sender']['avatar_url'] =
                 \Storage::disk('public')->url($record['sender']['avatar_url']);
         }
 
-        if($record['sender']['officer'] != null){
-            $officer = \App\Models\Officer\Officer::find($record['sender']['officer']['id']);
+        /** Replace countesy_id → countesy_name */
+        $sender = \App\Models\User::find($record['sender']['id']);
+        $record['sender']['countesy_name'] =
+            optional($sender?->people?->countesy)->name;
 
-            // ✅ ADD ONLY THIS (from Officer)
-            $record['sender']['countesy_id'] = $officer->countesy_id;
+        unset($record['sender']['countesy_id']);
 
-            $record['sender']['officer']['people'] = $officer->people;
-            $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
-                $job->countesy;
-                if($job->organizationStructurePosition){
-                    $job->organizationStructurePosition->position;
-                    if($job->organizationStructurePosition->organizationStructure){
-                        $job->organizationStructurePosition
-                            ->organizationStructure
-                            ->organization;
-                    }
-                }
-                return $job;
+        /** Receivers fullname with countesy */
+        $receivers = collect($record['receivers'])->pluck('id')->toArray();
+        $record['receivers'] = \App\Models\Officer\Officer::whereIn('id',$receivers)
+            ->get()
+            ->map(function ($receiver) {
+                return [
+                    'id' => $receiver->id,
+                    'code' => $receiver->code,
+                    'user' => [
+                        'id' => $receiver->user->id,
+                        'fullname' =>
+                            optional($receiver->countesy)->name.' '.
+                            $receiver->user->lastname.' '.$receiver->user->firstname
+                    ]
+                ];
             });
-        }
-
-        if($record['document'] != null){
-            $record['document']['pdf_file_size'] = 0;
-            $record['document']['word_file_size'] = 0;
-
-            if($record['document']['pdf_file'] &&
-                \Storage::disk('public')->exists($record['document']['pdf_file'])){
-                $path = $record['document']['pdf_file'];
-                $record['document']['pdf_file'] =
-                    \Storage::disk('public')->url($path);
-                $record['document']['pdf_file_size'] =
-                    round(\Storage::disk('public')->size($path)/(1024*1024),2)." MB";
-            }
-
-            if($record['document']['word_file'] &&
-                \Storage::disk('public')->exists($record['document']['word_file'])){
-                $path = $record['document']['word_file'];
-                $record['document']['word_file'] =
-                    \Storage::disk('public')->url($path);
-                $record['document']['word_file_size'] =
-                    round(\Storage::disk('public')->size($path)/(1024*1024),2)." MB";
-            }
-        }
 
         return $record;
     });
 
-    $responseData['message'] = __("crud.read.success");
-    $responseData['ok'] = true;
-
-    return response()->json($responseData, 200);
+    return response()->json([
+        'message' => __('crud.read.success'),
+        'records' => $responseData['records'],
+        'ok' => true
+    ], 200);
 }
+
+
 
     // public function read(Request $request){
     //     $user = \Auth::user() != null
@@ -594,25 +512,22 @@ class TransactionController extends Controller
     //         'ok' => true
     //     ], 200);
     // }
+
     public function read(Request $request)
 {
-    $user = \Auth::user() != null
-        ? \Auth::user()
-        : (
-            auth('api')->user()
-                ? auth('api')->user()
-                : (
-                    $request->user() != null
-                        ? $request->user()
-                        : 0
-                )
-        );
+    $user = \Auth::user()
+        ?? auth('api')->user()
+        ?? $request->user()
+        ?? 0;
 
-    $record = intval($request->id) > 0 ? RecordModel::find($request->id) : null;
+    $record = intval($request->id) > 0
+        ? RecordModel::find($request->id)
+        : null;
+
     if ($record == null) {
         return response()->json([
             'ok' => false,
-            'record' => $record,
+            'record' => null,
             'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
         ], 403);
     }
@@ -621,36 +536,20 @@ class TransactionController extends Controller
 
     $crud->setRelationshipFunctions([
         'document' => [
-            'id', 'objective', 'word_file', 'pdf_file', 'number',
-            'author' => ['id', 'firstname', 'lastname'],
-            'editor' => ['id', 'firstname', 'lastname'],
+            'id','objective','word_file','pdf_file','number'
         ],
-
         'sender' => [
-            'id', 'firstname', 'lastname', 'avatar_url', 'countesy_id',
-            'officer' => [
-                'id', 'code',
-            ],
+            'id','firstname','lastname','avatar_url',
+            'officer' => ['id','code']
         ],
-
-        'receivers' => ['id', 'firstname', 'lastname'],
-
+        'receivers' => ['id','firstname','lastname'],
         'previous' => [
-            'id', 'objective', 'word_file', 'pdf_file',
-            'document' => [
-                'id', 'objective', 'word_file', 'pdf_file',
-            ],
-            'sender' => ['id', 'firstname', 'lastname', 'countesy_id'],
-            'receivers' => ['id', 'firstname', 'lastname'],
+            'id','objective','word_file','pdf_file',
+            'sender' => ['id','firstname','lastname'],
         ],
-
         'next' => [
-            'id', 'objective', 'word_file', 'pdf_file',
-            'document' => [
-                'id', 'objective', 'word_file', 'pdf_file',
-            ],
-            'sender' => ['id', 'firstname', 'lastname', 'countesy_id'],
-            'receivers' => ['id', 'firstname', 'lastname'],
+            'id','objective','word_file','pdf_file',
+            'sender' => ['id','firstname','lastname'],
         ],
     ]);
 
@@ -662,72 +561,44 @@ class TransactionController extends Controller
     $responseData['records'] = $responseData['records']->map(function ($record) {
 
         /** Sender fullname */
-        if (
-            !empty($record['sender']['firstname']) &&
-            !empty($record['sender']['lastname'])
-        ) {
+        if (!empty($record['sender']['firstname']) && !empty($record['sender']['lastname'])) {
             $record['sender']['fullname'] =
-                $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+                $record['sender']['lastname'].' '.$record['sender']['firstname'];
         }
 
         /** Sender avatar */
-        if (
-            !empty($record['sender']['avatar_url']) &&
-            \Storage::disk('public')->exists($record['sender']['avatar_url'])
-        ) {
+        if (!empty($record['sender']['avatar_url']) &&
+            \Storage::disk('public')->exists($record['sender']['avatar_url'])) {
             $record['sender']['avatar_url'] =
                 \Storage::disk('public')->url($record['sender']['avatar_url']);
         }
 
-        /** Officer info */
-        if (!empty($record['sender']['officer'])) {
-            $officer = \App\Models\Officer\Officer::find($record['sender']['officer']['id']);
-            if ($officer) {
-                $record['sender']['officer']['people'] = $officer->people;
-                $record['sender']['officer']['jobs'] = $officer->jobs->map(function ($job) {
-                    $job->countesy;
-                    if ($job->organizationStructurePosition) {
-                        $job->organizationStructurePosition->position;
-                        if ($job->organizationStructurePosition->organizationStructure) {
-                            $job->organizationStructurePosition
-                                ->organizationStructure
-                                ->organization;
-                        }
-                    }
-                    return $job;
-                });
+        /** Replace countesy_id → countesy_name */
+        $sender = \App\Models\User::find($record['sender']['id']);
+        $record['sender']['countesy_name'] =
+            optional($sender?->people?->countesy)->name;
+
+        unset($record['sender']['countesy_id']);
+
+        /** Filesize in MB */
+        if ($record['document']) {
+            foreach (['pdf_file','word_file'] as $file) {
+                $sizeKey = $file.'_size';
+                $record['document'][$sizeKey] = 0;
+
+                if (!empty($record['document'][$file]) &&
+                    \Storage::disk('public')->exists($record['document'][$file])) {
+
+                    $path = $record['document'][$file];
+                    $record['document'][$file] =
+                        \Storage::disk('public')->url($path);
+
+                    $record['document'][$sizeKey] =
+                        round(\Storage::disk('public')->size($path)/(1024*1024),2).' MB';
+                }
             }
         }
 
-        /** Document files */
-        if (!empty($record['document'])) {
-            $record['document']['pdf_file_size'] = 0;
-            $record['document']['word_file_size'] = 0;
-
-            if (
-                !empty($record['document']['pdf_file']) &&
-                \Storage::disk('public')->exists($record['document']['pdf_file'])
-            ) {
-                $path = $record['document']['pdf_file'];
-                $record['document']['pdf_file'] =
-                    \Storage::disk('public')->url($path);
-                $record['document']['pdf_file_size'] =
-                    round(\Storage::disk('public')->size($path) / (1024 * 1024), 2) . ' MB';
-            }
-
-            if (
-                !empty($record['document']['word_file']) &&
-                \Storage::disk('public')->exists($record['document']['word_file'])
-            ) {
-                $path = $record['document']['word_file'];
-                $record['document']['word_file'] =
-                    \Storage::disk('public')->url($path);
-                $record['document']['word_file_size'] =
-                    round(\Storage::disk('public')->size($path) / (1024 * 1024), 2) . ' MB';
-            }
-        }
-
-        /** Timeline */
         $record['transactions'] =
             RecordModel::find($record['id'])->getTimeline();
 
@@ -737,9 +608,11 @@ class TransactionController extends Controller
     return response()->json([
         'message' => __('crud.read.success'),
         'record' => $responseData['records']->first(),
-        'ok' => true,
+        'ok' => true
     ], 200);
 }
+
+
 
     public function store(Request $request){
         $receivers = explode(',',$request->receivers);
