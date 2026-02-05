@@ -389,26 +389,19 @@ class TransactionController extends Controller
                     return $job;
                 });
             }
-            // if(
-            //     $record['document'] != null &&
-            //     $record['document']['pdf_file'] != null &&
-            //     strlen( $record['document']['pdf_file'] ) > 0 &&
-            //     \Storage::disk('public')->exists( $record['document']['pdf_file'] )
-            // ){
-            //     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-            // }
+
             if( $record['document'] != null ){
                 $record['document']['pdf_file_size'] =  0;
                 $record['document']['word_file_size'] = 0 ;
                 if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
                     $OriginalPath = $record['document']['pdf_file'];
                     $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / 1024, 2) . " KB" ;     //uncomment to get filesize
+                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;     //uncomment to get filesize
                 }
                 if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
                     $OriginalPath = $record['document']['word_file'];
                     $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-                    $record['document']['word_file_size'] = round( \Storage::disk('public')->path( $OriginalPath ) / 1024, 2) . " KB" ;   //uncomment to get filesize
+                    $record['document']['word_file_size'] = round( \Storage::disk('public')->path( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
                 }
             }
             $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
