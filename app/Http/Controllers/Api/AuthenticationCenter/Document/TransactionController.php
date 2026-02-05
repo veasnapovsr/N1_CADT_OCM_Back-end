@@ -176,7 +176,7 @@ class TransactionController extends Controller
             'sender' => [
                 'id' , 'firstname' , 'lastname' , 'avatar_url',
                 'officer' => [
-                        'id' , 'code' ,
+                        'id' , 'code' , 'countesy_id',
                         // people => [ 'id' , 'firstname' , 'lastname' ]
                 ]
             ] , //append avatar_url properties
@@ -188,7 +188,7 @@ class TransactionController extends Controller
                 //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
-                'sender' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id'] ,
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
             'next' => [
@@ -198,7 +198,7 @@ class TransactionController extends Controller
                     // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                     // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
-                'sender' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname' , 'countesy_id' ] ,
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
         ]);
@@ -335,7 +335,7 @@ class TransactionController extends Controller
             'sender' => [
                 'id' , 'firstname' , 'lastname' , 'avatar_url',
                 'officer' => [
-                        'id' , 'code'
+                        'id' , 'code', 'countesy_id',
                 ]
             ] ,
             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
@@ -347,7 +347,7 @@ class TransactionController extends Controller
                 //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                 //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
-                'sender' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id'] ,
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
             'next' => [
@@ -357,7 +357,7 @@ class TransactionController extends Controller
                     // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
                     // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
                 ] ,
-                'sender' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id', ] ,
                 'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
         ]);
