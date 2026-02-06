@@ -1024,7 +1024,7 @@ class TransactionController extends Controller
                     unlink($thumbnailPath);
                 }
                 $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                $pdf->saveImage($thumbnailPath, 1);
+                $pdf->save($thumbnailPath, 1);
                 // $pdf->setPage(1)
                 //     ->setResolution(150)
                 //     ->saveImage($thumbnailPath);
