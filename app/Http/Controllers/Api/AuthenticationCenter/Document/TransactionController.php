@@ -1024,9 +1024,11 @@ class TransactionController extends Controller
                     unlink($thumbnailPath);
                 }
                 $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                $pdf->setPage(1)
-                    ->setResolution(150)
-                    ->saveImage($thumbnailPath);
+                $pdf->setResolution(150)
+                    ->saveImage($thumbnailPath, 1);
+                // $pdf->setPage(1)
+                //     ->setResolution(150)
+                //     ->saveImage($thumbnailPath);
                 //==================================================
 
                 // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
