@@ -359,7 +359,7 @@ class TransactionController extends Controller
         }
 
         //==========ទាញយកPDf Thumbnail===============
-        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/1firtpage.jpg');
+        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/1firstpage.jpg');
         //=============================================
             
 
@@ -1020,11 +1020,11 @@ class TransactionController extends Controller
                 $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
 
                 // Remove existing thumbnail if it exists
-                if (file_exists($thumbnailPath)) {
-                    unlink($thumbnailPath);
-                }
+                // if (file_exists($thumbnailPath)) {
+                //     unlink($thumbnailPath);
+                // }
                 $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                $pdf->save($thumbnailPath, 1);
+                $pdf->saveImage($thumbnailPath);
                 // $pdf->setPage(1)
                 //     ->setResolution(150)
                 //     ->saveImage($thumbnailPath);
