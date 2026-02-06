@@ -79,71 +79,71 @@ class TransactionController extends Controller
          * លក្ខណចម្រោះតាមអង្គភាពចុងក្រោយ
          */
         $queryString = [
-            // "where" => [
-            //     'default' => [
-            //         $status != false
-            //             ?
-            //                 [
-            //                     'field' => 'status' ,
-            //                     'value' => $status
-            //                 ]
-            //             :
-            //             [
-            //                 'field' => 'status' ,
-            //                 'value' => null
-            //             ]
-            //     ],
-            //     'in' => [
-            //         [
-            //             'field' => 'type' ,
-            //             'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
-            //         ]
-            //     ] ,
-            //     'not' => [
-            //         [
-            //             'field' => 'type' ,
-            //             'value' => [4]
-            //         ]
-            //     ] ,
-            //     'like' => [
-            //         $date != false
-            //             ? [
-            //                 'field' => 'date_in' ,
-            //                 'value' => $date->format('Y-m-d')
-            //             ] : []
-            //     ]
-            // ] ,
-            // "pivots" => [
-            //     // Transaction Document
-            //     $number != false ?
-            //     [
-            //         "relationship" => 'document',
-            //         "where" =>[
-            //             // "in" => [
-            //             //     "field" => "id",
-            //             //     "value" => [$request->unit]
-            //             // ],
-            //             // "not"=> [
-            //             //     [
-            //             //         "field" => 'fieldName' ,
-            //             //         "value"=> 'value'
-            //             //     ]
-            //             // ],
-            //             "like"=>  [
-            //                 [
-            //                     "field"=> 'number' ,
-            //                     "value"=> $number
-            //                 ],
-            //                 [
-            //                     "field"=> 'objective' ,
-            //                     "value"=> $objective
-            //                 ],
+            "where" => [
+                'default' => [
+                    $status != false
+                        ?
+                            [
+                                'field' => 'status' ,
+                                'value' => $status
+                            ]
+                        :
+                        [
+                            'field' => 'status' ,
+                            'value' => null
+                        ]
+                ],
+                // 'in' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
+                //     ]
+                // ] ,
+                // 'not' => [
+                //     [
+                //         'field' => 'type' ,
+                //         'value' => [4]
+                //     ]
+                // ] ,
+                'like' => [
+                    $date != false
+                        ? [
+                            'field' => 'date_in' ,
+                            'value' => $date->format('Y-m-d')
+                        ] : []
+                ]
+            ] ,
+            "pivots" => [
+                // Transaction Document
+                $number != false ?
+                [
+                    "relationship" => 'document',
+                    "where" =>[
+                        // "in" => [
+                        //     "field" => "id",
+                        //     "value" => [$request->unit]
+                        // ],
+                        // "not"=> [
+                        //     [
+                        //         "field" => 'fieldName' ,
+                        //         "value"=> 'value'
+                        //     ]
+                        // ],
+                        "like"=>  [
+                            [
+                                "field"=> 'number' ,
+                                "value"=> $number
+                            ],
+                            [
+                                "field"=> 'objective' ,
+                                "value"=> $objective
+                            ],
 
-            //             ]
-            //         ]
-            //     ]
-            //     : []
-            // ],
+                        ]
+                    ]
+                ]
+                : []
+            ],
             "pagination" => [
                 'perPage' => $perPage,
                 'page' => $page
@@ -599,6 +599,23 @@ class TransactionController extends Controller
          * ៣. និងត្រូវចុះពេលវេលាផងដែរ ដោយស្វ័យប្រវត្ត
          */
 
+        $receiverIds = isset( $request->receivers ) && strlen( $request->receivers ) > 0 ? explode( ',' , $request->receiver_ids ) : false ;
+
+        $organizationStructure = isset( $request->organizatoin_structure_id ) && intval( $request->organizatoin_structure_id ) > 0 ? \App\Models\Organization\OrganizationStructure::find( $request->organizatoin_structure_id ) : null ;
+        if( $organizationStructure == null ){
+            return response()->json([
+                'ok' => false ,
+                'message' => 'សូមបញ្ជាក់អង្គភាពដែលបញ្ជូនទៅ។'
+            ],500);
+        }
+        if( $organizationStructure->adminFocalPeople->count() <= 0 && $receiverIds == false ){
+            return response()->json([
+                'ok' => false ,
+                'message' => 'ស្ថាប័នមិនមានអ្នកទទួលឯកសារ។ សូមបញ្ជាក់អ្នកទទួលឯកសារ។'
+            ],500);
+        }
+        $receiverIds = $receiverIds != false ? array_merge( $organizationStructure->adminFocalPeople->pluck('id')->toArray() , $receiverIds ) : $organizationStructure->adminFocalPeople->pluck('id')->toArray() ;
+
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
         $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
         if( $transaction == null ){
@@ -607,35 +624,26 @@ class TransactionController extends Controller
                 'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
-        // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន
+        // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន ក្នុងករណីដែលជាឯកសារ
         if(
-            ( $transaction->document == null  ) ||
-            (
-                $transaction->document != null &&
-                ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) &&
-                ( $transaction->document->pdf_file == null || strlen( $transaction->document->pdf_file ) <= 0 )
+            // ត្រងចំណុចនេះមានន័យថាជាការចាប់ផ្ដើមដំបូង។ សម្រាប់ការបញ្ជូនបន្តដែលមិនមែនផ្ដើមដំបូង អនុញ្ញាតឱ្យមិនមានឯកសារ។
+            $transaction->previous_transaction_id == null && 
+            ( 
+                ( $transaction->document == null  ) ||
+                (
+                    $transaction->document != null && 
+                    ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) &&
+                    ( $transaction->document->pdf_file == null || strlen( $transaction->document->pdf_file ) <= 0 )
+                )
             )
         ){
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការនេះមិនមានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
+                'message' => 'ប្រតិបត្តិការនៅដើមគ្រាមិនអាចគ្មានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
             ],422);
         }
-        // ត្រួតពិនិត្យអ្នកទទួលនៃការបញ្ជូន
-        if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
-
-            return response()->json([
-                'ok' => false ,
-                'message' => 'ប្រតិបត្តិការបញ្ជូននេះមិនទាន់មានអ្នកទទួលឡើយ។'
-            ],422);
-        }
-        if( $transaction->receivers == null || ( $transaction->receivers instanceof Collection  && $transaction->receivers->count <= 0 ) ){
-            return response()->json([
-                'ok' => false ,
-                'message' => 'មិនមានបញ្ជាក់អង្គភាពទទួល និងអ្នកទទួល។'
-            ],500);
-        }
-
+    
+        $transaction->
         $transaction->send();
         // ជូនដំណឹងទៅអ្នកទទួល។ ការងារនេះនិងបន្តនៅពេលក្រោយ។
         return response()->json([
@@ -1595,5 +1603,5 @@ public function restoreFocalReceiver($id)
                 // }
             }
         }
-}
+    }
 }
