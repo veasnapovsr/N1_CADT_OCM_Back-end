@@ -10,7 +10,9 @@ use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
-use setasign\Fpdi\Fpdi;
+// use setasign\Fpdi\Fpdi;
+use Spatie\PdfToImage\Pdf;
+
 
 class TransactionController extends Controller
 {
@@ -242,7 +244,11 @@ class TransactionController extends Controller
     //         if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
     //             $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
     //         }
-
+            
+    //        //==========ទាញយកPDf Thumbnail===============
+    //        $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+    //        //=============================================
+            
     //         if( $record['sender']['officer'] != null ){
     //             $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
     //             $record['sender']['officer']['people'] = $officer->people;
@@ -255,7 +261,9 @@ class TransactionController extends Controller
     //                     }
     //                 }
     //                 return $job;
-    //             });
+    //             }
+    //             $record['sender']['countesy'] = $officer->jobs->first()->countesy->name;
+    //            );
     //         }
     //         // if( $record['document'] != null ){
     //         //     if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
@@ -350,13 +358,18 @@ class TransactionController extends Controller
                 \Storage::disk('public')->url($record['sender']['avatar_url']);
         }
 
+        //==========ទាញយកPDf Thumbnail===============
+        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+        //=============================================
+            
+
         /** Replace countesy_id → countesy_name */
         $sender = \App\Models\User::find($record['sender']['id']);
         $record['sender']['countesy_name'] =
             optional($sender?->people?->countesy)->name;
 
         unset($record['sender']['countesy_id']);
-
+        
         /** Receivers fullname with countesy */
         $receivers = collect($record['receivers'])->pluck('id')->toArray();
         $record['receivers'] = \App\Models\Officer\Officer::whereIn('id',$receivers)
@@ -473,6 +486,9 @@ class TransactionController extends Controller
     //         if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
     //             $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
     //         }
+    //         //==========ទាញយកPDf Thumbnail===============
+    //         $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+    //         //============================================= 
     //         if( $record['sender']['officer'] != null ){
     //             $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
     //             $record['sender']['officer']['people'] = $officer->people;
@@ -573,7 +589,11 @@ class TransactionController extends Controller
                 \Storage::disk('public')->url($record['sender']['avatar_url']);
         }
 
-        /** Replace countesy_id → countesy_name */
+        //==========ទាញយកPDf Thumbnail===============
+        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+        //=============================================
+
+        /** Replace countesy_id → countesy_name */  
         $sender = \App\Models\User::find($record['sender']['id']);
         $record['sender']['countesy_name'] =
             optional($sender?->people?->countesy)->name;
@@ -979,6 +999,27 @@ class TransactionController extends Controller
                 $uniqeName = Storage::disk('public')->putFile( 'doctransaction/'.$document->id , new File( $_FILES['pdf_file']['tmp_name'] ) );
                 $document->pdf_file = $uniqeName ;
                 $document->save();
+
+                //===============================================
+                // បង្កើត Thumbnail សម្រាប់ឯកសារ​ PDF
+                $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                // Create folder if it doesn't exist
+                if (!file_exists($thumbnailFolder)) {
+                    mkdir($thumbnailFolder, 0777, true); // recursive
+                }
+                // 2️⃣ Define thumbnail file path (name)
+                $thumbnailFileName = 'firstpage.jpg';
+                $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
+
+                // Remove existing thumbnail if it exists
+                if (file_exists($thumbnailPath)) {
+                    unlink($thumbnailPath);
+                }
+                $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
+                $pdf->setPage(1)
+                    ->setResolution(150)
+                    ->saveImage($thumbnailPath);
+                //==================================================
 
                 // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
                 if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
