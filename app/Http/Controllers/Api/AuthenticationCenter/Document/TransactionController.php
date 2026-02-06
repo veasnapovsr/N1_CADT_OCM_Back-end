@@ -1020,9 +1020,10 @@ class TransactionController extends Controller
                 $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
 
                 // Remove existing thumbnail if it exists
-                // if (file_exists($thumbnailPath)) {
-                //     unlink($thumbnailPath);
-                // }
+                if (file_exists($thumbnailPath)) {
+                    unlink($thumbnailPath);
+                }
+
                 $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
                 $pdf->saveImage($thumbnailPath);
                 // $pdf->setPage(1)
