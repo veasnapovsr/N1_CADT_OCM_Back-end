@@ -359,7 +359,7 @@ class TransactionController extends Controller
         }
 
         //==========ទាញយកPDf Thumbnail===============
-        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/1firtpage.jpg');
         //=============================================
             
 
