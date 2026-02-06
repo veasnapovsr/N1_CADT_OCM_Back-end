@@ -11,6 +11,9 @@ class OrganizationStructure extends Model
 {
     use HasFactory, SoftDeletes;
     protected $guarded = ['id'];
+    public function adminFocalPeople(){
+        return $this->belongsToMany( \App\Models\Officer\Officer::class , 'document_organization_focal_people' , 'organization_structure_id' , 'officer_id' );
+    }
     public function organization(){
         return $this->belongsTo( \App\Models\Organization\Organization::class , 'organization_id' , 'id' );
     }

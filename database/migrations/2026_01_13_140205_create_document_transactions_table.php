@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('date_in',20)->nullable()->comment('The datetime that the document is check in');
             $table->integer('previous_transaction_id')->nullable(true)->default(0)->comment('The id of the previous transaction_id');
             $table->integer('next_transaction_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
-            $table->integer('origin_organization_id')->nullable(true)->default(0)->comment('The id of the next transaction_id');
+            $table->integer('organization_structure_id')->nullable(true)->default(0)->comment('The id of the organizatoin structure');
             // $table->string('tpid',191)->nullable(false)->comment('The structure ids');
             $table->string('tpid',191)->nullable(true)->comment('The structure ids');
             // $table->string('status',20)->nullable(false)->comment('The status of the transaction');
