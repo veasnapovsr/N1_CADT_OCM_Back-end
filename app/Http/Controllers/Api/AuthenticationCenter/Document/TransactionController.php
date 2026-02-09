@@ -246,7 +246,13 @@ class TransactionController extends Controller
     //         }
             
     //        //==========ទាញយកPDf Thumbnail===============
-    //        $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+    //    //    $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+    //        $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+    //        if (Storage::disk('public')->exists($thumbnailPath)) {
+    //            $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+    //        } else {
+    //            $record['document']['thumbnail'] = null; // optional: placeholder
+    //        }
     //        //=============================================
             
     //         if( $record['sender']['officer'] != null ){
@@ -359,7 +365,13 @@ class TransactionController extends Controller
         }
 
         //==========ទាញយកPDf Thumbnail===============
-        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg');
+        // $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg');
+        $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+        if (Storage::disk('public')->exists($thumbnailPath)) {
+            $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+        } else {
+            $record['document']['thumbnail'] = null; // optional: placeholder
+        }
         //=============================================
             
 
@@ -487,7 +499,12 @@ class TransactionController extends Controller
     //             $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
     //         }
     //         //==========ទាញយកPDf Thumbnail===============
-    //         $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+    //         $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+    //         if (Storage::disk('public')->exists($thumbnailPath)) {
+    //             $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+    //         } else {
+    //             $record['document']['thumbnail'] = null; // optional: placeholder
+    //         }
     //         //============================================= 
     //         if( $record['sender']['officer'] != null ){
     //             $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
@@ -590,7 +607,12 @@ class TransactionController extends Controller
         }
 
         //==========ទាញយកPDf Thumbnail===============
-        $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+        $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+        if (Storage::disk('public')->exists($thumbnailPath)) {
+            $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+        } else {
+            $record['document']['thumbnail'] = null; // optional: placeholder
+        }
         //=============================================
 
         /** Replace countesy_id → countesy_name */  
@@ -995,7 +1017,7 @@ class TransactionController extends Controller
                     )
             );
         if( $user ){
-            $document = intval( $request->document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
+            $document = intval( $request-s>document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
             if( $document == null ){
                 return response()->json([
                     'ok' => false ,
@@ -1009,27 +1031,41 @@ class TransactionController extends Controller
                 $document->save();
 
                 //===============================================
+                //For window require to install imagick PHP 8.2 TS, imagemagick and ghostscript latest version,
+                //for linux just composer require spatie/pdf-to-image
                 // បង្កើត Thumbnail សម្រាប់ឯកសារ​ PDF
-                $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
-                // Create folder if it doesn't exist
-                if (!file_exists($thumbnailFolder)) {
-                    mkdir($thumbnailFolder, 0777, true); // recursive
+                try{ 
+                    if (class_exists(\Imagick::class)){
+                        $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                        // Create folder if it doesn't exist
+                        if (!file_exists($thumbnailFolder)) {
+                            mkdir($thumbnailFolder, 0777, true); // recursive
+                        }
+                        // 2️⃣ Define thumbnail file path (name)
+                        $thumbnailFileName = 'firstpage.jpg';
+                        $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
+
+                        // Remove existing thumbnail if it exists
+                        // if (file_exists($thumbnailPath)) {
+                        //     unlink($thumbnailPath);
+                        // }
+
+                        $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
+                        $pdf->save($thumbnailPath);
+
+                        // $pdf->setPage(1)
+                        //     ->setResolution(150)
+                        //     ->saveImage($thumbnailPath);
+                        //==================================================
+                    }
+                }catch (\Throwable $e) {
+                    // Log only, do NOT crash upload
+                    \Log::warning('PDF thumbnail skipped', [
+                        'reason' => $e->getMessage()
+                    ]);
                 }
-                // 2️⃣ Define thumbnail file path (name)
-                $thumbnailFileName = 'firstpage.jpg';
-                $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
-
-                // Remove existing thumbnail if it exists
-                // if (file_exists($thumbnailPath)) {
-                //     unlink($thumbnailPath);
-                // }
-
-                $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                $pdf->save($thumbnailPath);
-                // $pdf->setPage(1)
-                //     ->setResolution(150)
-                //     ->saveImage($thumbnailPath);
-                //==================================================
+                
+                
 
                 // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
                 if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
