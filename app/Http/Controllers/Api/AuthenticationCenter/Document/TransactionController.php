@@ -686,7 +686,6 @@ class TransactionController extends Controller
          * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
          */
         // ត្រួតពិនិត្យម៉ោងឯកសារចូល
-        //frontend will track the down the date and send to backend 
         $dateIn = strlen( trim($request->date_in) ) > 0 ? \Carbon\Carbon::parse( trim($request->date_in) ) : false ;
         if( $dateIn == false ){
             return response()->json([

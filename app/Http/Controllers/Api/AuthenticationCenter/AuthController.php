@@ -97,24 +97,16 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        //validate base on the rule like required must be string and in email 
-        // for boolean if empty default value is false
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
             'remember_me' => 'boolean'
         ]);
 
-        // array destructuring and a json properties deleted_at in null 
         $credentials = request(['email', 'password']);
         $credentials['deleted_at'] = null;
 
-        // the complete function Auth::guard('api')->attempt($credentials)
-        // where store in config/auth.php, provider connect to user class, and guard api connect to provider user.
-        // this is how passport able to query user tables
-        // for the Auth::attempt function like tinker eloquent: user::where($creadentials)->first(), the key of the object consider to column field and the value belong to that is value of the query 
         if(!Auth::attempt($credentials)){
-            // Try to log in using all credentials (email, password, deleted_at, maybe remember_me). If login fails, check whether the email exists at all.
             if( User::where('email', $request->email) != null ){
                 /**
                  * Account does exist but the password might miss type
@@ -135,14 +127,12 @@ class AuthController extends Controller
         /**
          * Retrieve account
          */
-        //if statement is fail the result is true start query user info
         $user = $request->user();
 
         /**
          * Update some information to keep track the user authentiation
          */
         $user->update(
-        // start tracking user login, last login ip 
             [
                 'login_count' => intval( $user->login_count ) + 1 ,
                 'last_login' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
@@ -155,14 +145,13 @@ class AuthController extends Controller
                             ? $_SERVER['HTTP_X_FORWARDED_FOR']
                             //if user is from the remote address
                             : $_SERVER['REMOTE_ADDR']
-                    ) // the system just want to check the last ip access but its doesnt really matter
+                    )
             ]
         );
 
         /**
          * Check disability
          */
-        // there only two value in active column 1 mean active < 1 mean deactivate
         if( $user->active <= 0 ) {
              /**
              * Account has been disabled
@@ -174,10 +163,6 @@ class AuthController extends Controller
         /**
          * Check roles
          */
-        // when we use pluck it is of course return only id but still in collection that why wee need to use to array
-        // This part check the tag where its value is core_service then retrieve a bunch of id 
-        // with intersect it then compare between the user role id to the role id that have core service
-        // and if the statement true or condition is empty the user cant access the platform
         if( empty( array_intersect( $user->roles->pluck('id')->toArray() , \App\Models\Role::where('tag','core_service')->pluck('id')->toArray() ) ) ){
             /**
              * User seem does not have any right to login into backend / core service
@@ -191,8 +176,7 @@ class AuthController extends Controller
          * Check user role
          */
 
-        // with createToken is the laravel passport it will get the user_id then create the new token in the passsport auth data 
-        // even though it look like createToken in user table but it actually not
+        
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
         if ($request->remember_me)
