@@ -1053,9 +1053,38 @@ class TransactionController extends Controller
                 //For window require to install imagick PHP 8.2 TS, imagemagick and ghostscript latest version,
                 //for linux just composer require spatie/pdf-to-image
                 // បង្កើត Thumbnail សម្រាប់ឯកសារ​ PDF
-                try{ 
-                    if (class_exists(\Imagick::class)){
-                        $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                // try{ 
+                //     if (class_exists(\Imagick::class)){
+                //         $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                //         // Create folder if it doesn't exist
+                //         if (!file_exists($thumbnailFolder)) {
+                //             mkdir($thumbnailFolder, 0777, true); // recursive
+                //         }
+                //         // 2️⃣ Define thumbnail file path (name)
+                //         $thumbnailFileName = 'firstpage.jpg';
+                //         $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
+
+                //         // Remove existing thumbnail if it exists
+                //         // if (file_exists($thumbnailPath)) {
+                //         //     unlink($thumbnailPath);
+                //         // }
+
+                //         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
+                //         $pdf->save($thumbnailPath);
+
+                //         // $pdf->setPage(1)
+                //         //     ->setResolution(150)
+                //         //     ->saveImage($thumbnailPath);
+                //         //==================================================
+                //     }
+                // }catch (\Throwable $e) {
+                //     // Log only, do NOT crash upload
+                //     \Log::warning('PDF thumbnail skipped', [
+                //         'reason' => $e->getMessage()
+                //     ]);
+                // }
+                
+                 $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
                         // Create folder if it doesn't exist
                         if (!file_exists($thumbnailFolder)) {
                             mkdir($thumbnailFolder, 0777, true); // recursive
@@ -1070,20 +1099,8 @@ class TransactionController extends Controller
                         // }
 
                         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                        $pdf->save($thumbnailPath);
+                        $pdf->saveImage($thumbnailPath);
 
-                        // $pdf->setPage(1)
-                        //     ->setResolution(150)
-                        //     ->saveImage($thumbnailPath);
-                        //==================================================
-                    }
-                }catch (\Throwable $e) {
-                    // Log only, do NOT crash upload
-                    \Log::warning('PDF thumbnail skipped', [
-                        'reason' => $e->getMessage()
-                    ]);
-                }
-                
                 
 
                 // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
