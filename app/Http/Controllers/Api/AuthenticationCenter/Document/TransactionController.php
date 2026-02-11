@@ -389,13 +389,17 @@ class TransactionController extends Controller
                     $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
                 }
             }
+            if( $record['sender']['officer'] != null ){
+                $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
+                $record['sender']['countesy_name'] = $officer->jobs->first()->countesy->name ? $officer->jobs->first()->countesy->name : null;
+            }
 
-            /** Replace countesy_id → countesy_name */
-            $sender = \App\Models\User::find($record['sender']['id']);
-            $record['sender']['countesy_name'] =
-                optional($sender?->people?->countesy)->name;
+            // /** Replace countesy_id → countesy_name */
+            // $sender = \App\Models\User::find($record['sender']['id']);
+            // $record['sender']['countesy_name'] =
+            //     optional($sender?->people?->countesy)->name;
 
-            unset($record['sender']['countesy_id']);
+            // unset($record['sender']['countesy_id']);
             
             /** Receivers fullname with countesy */
             $receivers = collect($record['receivers'])->pluck('id')->toArray();
