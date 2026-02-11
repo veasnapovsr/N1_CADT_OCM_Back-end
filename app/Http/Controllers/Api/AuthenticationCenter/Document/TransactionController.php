@@ -369,9 +369,9 @@ class TransactionController extends Controller
             // $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg');
             $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
             if (Storage::disk('public')->exists($thumbnailPath)) {
-                $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+                $record['document']['pdf_thumbnail'] = Storage::disk('public')->url($thumbnailPath);
             } else {
-                $record['document']['thumbnail'] = null; // optional: placeholder
+                $record['document']['pdf_thumbnail'] = null; // optional: placeholder
             }
             //=============================================
             
