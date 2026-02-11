@@ -216,44 +216,13 @@ class UserController extends Controller
             $user->people_id = $person->id ;
             $user->save();
 
-            // /**
-            //  * Assign role
-            //  */
-            // $backendMembegit rRole = \App\Models\Role::backend()->first();
-            // if( $backendMemberRole != null ){
-            //     $user->roles()->sync( [$backendMemberRole]);
-            // }
-
-            //======Replace Assign Role=====
             /**
-             * Check disability
+             * Assign role
              */
-            if( $user->active <= 0 ) {
-                /**
-                * Account has been disabled
-                */
-            return response()->json([
-                'message' => 'គណនីនេះត្រូវបានបិទជាបណ្ដោះអាសន្ន។'
-            ], 403);
+            $backendMemberRole = \App\Models\Role::backend()->first();
+            if( $backendMemberRole != null ){
+                $user->assignRole( $backendMemberRole );
             }
-            /**
-             * Check roles
-             */
-            if( empty( array_intersect( 
-                // Retreive all the roles that authenticated user has
-                $user->roles->pluck('id')->toArray() 
-                // Retreive allowed roles
-                , \App\Models\Role::backend()->pluck('id')->push(1)->toArray() ) 
-                ) 
-            ){
-                /**
-                 * User seem does not have any right to login into backend / core service
-                 */
-                return response()->json([
-                    'message' => "គណនីនេះមិនមានសិទ្ធិប្រើប្រព័ន្ធឡើយ។"
-                ],403);
-            }
-            //===========================
             
             $user->save();
 
@@ -584,18 +553,18 @@ class UserController extends Controller
         //     $record->save();
         // }
 
-        // $record->officer;
-        // $record->officer?->countesy;
-        // $record->officer?->position;
-        // $record->officer?->organization;
-        // $record->officer?->people;
-        // $record->officer->image = $record->officer?->image != null && trim($record->officer->image ) != "" && \Storage::disk('public')->exists( $record->officer->image )
-        //     ? \Storage::disk('public')->url( $record->officer->image )
-        //     : (
-        //         $record->avatar_url != null && trim($record->avatar_url) != "" && \Storage::disk('public')->exists( $record->avatar_url )
-        //         ? \Storage::disk('public')->url( $record->avatar_url )
-        //         : false
-        //     );
+        $record->officer;
+        $record->officer->countesy;
+        $record->officer->position;
+        $record->officer->organization;
+        $record->officer->people;
+        $record->officer->image = $record->officer->image != null && trim($record->officer->image ) != "" && \Storage::disk('public')->exists( $record->officer->image )
+            ? \Storage::disk('public')->url( $record->officer->image )
+            : (
+                $record->avatar_url != null && trim($record->avatar_url) != "" && \Storage::disk('public')->exists( $record->avatar_url )
+                ? \Storage::disk('public')->url( $record->avatar_url )
+                : false
+            );
 
         return response()->json([
             'record' => [
@@ -801,15 +770,15 @@ class UserController extends Controller
         if( $user ){
             if( $user->officer != null && $user->officer->id == $request->officer_id ){
                 $officer = \App\Models\Officer\Officer::find($request->officer_id );
-                $officer == null ? false : $officer->update([   //'field' => $request->officer_field
-                    'code' => $request->officer_code ?? $officer->code ,
-                    'phone' => $request->officer_phone ?? $officer->phone,
-                    'email' => $request->officer_email ?? $officer->email,
-                    'passport' => $request->officer_passport ?? $officer->passport,
-                    'date' => $request->officer_date ?? $officer->date,
-                    // 'organization_id' => $request->officer_organization_id ?? $officer->organization_id,
-                    // 'position_id' => $request->officer_position_id ?? $officer->position_id,
-                    // 'countesy_id' => $request->officer_countesy_id ?? $officer->countesy_id,
+                $officer == null ? false : $officer->update([
+                    'code' => $request->officer_code ,
+                    'phone' => $request->officer_phone ,
+                    'email' => $request->officer_email ,
+                    'passport' => $request->officer_passport ,
+                    'date' => $request->officer_date ,
+                    'organization_id' => $request->officer_organization_id ,
+                    'position_id' => $request->officer_position_id ,
+                    'countesy_id' => $request->officer_countesy_id ,
                 ]);
                 $user = \App\Models\User::find( $user->id );
                 $user->people ;
@@ -1033,6 +1002,3 @@ class UserController extends Controller
         }
     }
 }
-
-
-
