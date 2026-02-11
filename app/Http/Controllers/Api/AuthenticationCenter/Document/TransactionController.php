@@ -1099,7 +1099,7 @@ class TransactionController extends Controller
                         // }
 
                         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                        $pdf->saveImage($thumbnailPath);
+                        $pdf->save($thumbnailPath);
 
                 
 
