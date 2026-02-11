@@ -1036,7 +1036,7 @@ class TransactionController extends Controller
                     )
             );
         if( $user ){
-            $document = intval( $request-s>document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
+            $document = intval( $request->document_id ) > 0 ? \App\Models\Document\Document::find( $request->document_id) : null ;
             if( $document == null ){
                 return response()->json([
                     'ok' => false ,
