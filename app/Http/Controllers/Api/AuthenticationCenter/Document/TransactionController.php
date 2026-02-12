@@ -676,8 +676,10 @@ class TransactionController extends Controller
 
 
     public function store(Request $request){
+        //explode is function to convert the string into the array but it separate the base on the first arguement     
         $receivers = explode(',',$request->receivers);
         $organizations = explode(',',$request->organizations);
+
         if(
             ( is_array( $receivers) && empty( $receivers ) ) ||
             ( is_array( $organizations) && empty( $organizations ) )
@@ -689,7 +691,15 @@ class TransactionController extends Controller
         }
     }
 
+    //1. it take the user token and and with passport it find the user id and return it
+    //2. check the value of datein, subject, objective, number, for subject if the request body dont have it will take objective as it value
+    //3. then create transaction, 
+    //4. after that take (number concatinate the date format ymdhis) and md5 it
+    //5. access document model and ::create{value...,..}
+    //6. with this function 'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') the backend side will generate it date itself
+    //7. after the document all set use transaction update the document id
     public function storeDraft(Request $request){
+        //get the token from user then turn it into id
         $user = \Auth::user() != null
             ? \Auth::user()
             : (
@@ -749,7 +759,7 @@ class TransactionController extends Controller
                 'message' => "សូមបញ្ចូលលេខឯកសារឱ្យបានត្រឹមត្រូវ។"
             ],422);
         }
-        $public_key = md5( $number . ( $dateIn != false ? $dateIn->format('YmdHis') : '' ) );
+        $public_key = md5( $number . ( $dateIn != false ? $dateIn->format('YmdHis') : '' ) ); //123 + 20260402103000 then md5 it 
         // ត្រួតពិនិត្យខ្លឹមសារឯកសារ
         $objective = strlen( trim($request->objective) ) > 0 ? trim($request->objective) : false ;
         if( $objective == false ){
@@ -854,7 +864,7 @@ class TransactionController extends Controller
 
         $receiverIds = isset( $request->receivers ) && strlen( $request->receivers ) > 0 ? explode( ',' , $request->receiver_ids ) : false ;
 
-        $organizationStructure = isset( $request->organizatoin_structure_id ) && intval( $request->organizatoin_structure_id ) > 0 ? \App\Models\Organization\OrganizationStructure::find( $request->organizatoin_structure_id ) : null ;
+        $organizationStructure = isset( $request->organizatoin_structure_id ) && intval( $request->organizatoin_structure_id ) > 0 ? \App\Models\Organization\OrganizationStructure::find( $request->organization_structure_id ) : null ;
         if( $organizationStructure == null ){
             return response()->json([
                 'ok' => false ,
@@ -1053,9 +1063,38 @@ class TransactionController extends Controller
                 //For window require to install imagick PHP 8.2 TS, imagemagick and ghostscript latest version,
                 //for linux just composer require spatie/pdf-to-image
                 // បង្កើត Thumbnail សម្រាប់ឯកសារ​ PDF
-                // try{ 
-                //     if (class_exists(\Imagick::class)){
-                //         $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                try{ 
+                    if (class_exists(\Imagick::class)){
+                        $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                        // Create folder if it doesn't exist
+                        if (!file_exists($thumbnailFolder)) {
+                            mkdir($thumbnailFolder, 0777, true); // recursive
+                        }
+                        // 2️⃣ Define thumbnail file path (name)
+                        $thumbnailFileName = 'firstpage.jpg';
+                        $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
+
+                        // Remove existing thumbnail if it exists
+                        // if (file_exists($thumbnailPath)) {             
+                        //     unlink($thumbnailPath);
+                        // }
+
+                        $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
+                        $pdf->save($thumbnailPath);
+
+                        // $pdf->setPage(1)
+                        //     ->setResolution(150)
+                        //     ->saveImage($thumbnailPath);
+                        //==================================================
+                    }
+                }catch (\Throwable $e) {
+                    // Log only, do NOT crash upload
+                    \Log::warning('PDF thumbnail skipped', [
+                        'reason' => $e->getMessage()
+                    ]);
+                }
+                
+                //  $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
                 //         // Create folder if it doesn't exist
                 //         if (!file_exists($thumbnailFolder)) {
                 //             mkdir($thumbnailFolder, 0777, true); // recursive
@@ -1071,35 +1110,6 @@ class TransactionController extends Controller
 
                 //         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
                 //         $pdf->save($thumbnailPath);
-
-                //         // $pdf->setPage(1)
-                //         //     ->setResolution(150)
-                //         //     ->saveImage($thumbnailPath);
-                //         //==================================================
-                //     }
-                // }catch (\Throwable $e) {
-                //     // Log only, do NOT crash upload
-                //     \Log::warning('PDF thumbnail skipped', [
-                //         'reason' => $e->getMessage()
-                //     ]);
-                // }
-                
-                 $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
-                        // Create folder if it doesn't exist
-                        if (!file_exists($thumbnailFolder)) {
-                            mkdir($thumbnailFolder, 0777, true); // recursive
-                        }
-                        // 2️⃣ Define thumbnail file path (name)
-                        $thumbnailFileName = 'firstpage.jpg';
-                        $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
-
-                        // Remove existing thumbnail if it exists
-                        // if (file_exists($thumbnailPath)) {
-                        //     unlink($thumbnailPath);
-                        // }
-
-                        $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                        $pdf->save($thumbnailPath);
 
                 
 
@@ -1681,6 +1691,18 @@ class TransactionController extends Controller
         ],200);
     }
     public function filterByStatus(Request $request){
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
         $status = false ;
         if( isset( $request->status ) && strlen( $request->status ) > 0 && in_array( $request->status , RecordModel::STATUSES ) ) {
             $status = $request->status ;
@@ -1697,8 +1719,9 @@ class TransactionController extends Controller
             'records' => $status == false
                 ? \DB::table('document_transactions')
                     ->select('status', \DB::raw('COUNT(*) as total'))
+                    ->where('sender_id', $user->id)
                     ->whereNull('deleted_at')
-		    ->groupBy('status')
+		            ->groupBy('status')
                     ->get()->pluck('total','status')->toArray()
                 : [
                     $status => RecordModel::whereNull( 'deleted_at' )->where('status', $status )->count()

@@ -28,8 +28,6 @@ return new class extends Migration
             $table->string('additional_officer_type',191)->nullable(true)->comment('this field use to identify others condition of officer_type');
             
             // Optional
-            $table->integer('organization_id')->default(0)->comment('The current organization of the officer ');
-            $table->integer('position_id')->default(0)->comment('The current position of the officer');
             $table->integer('rank_id')->default(0)->comment('The current rank or level of the officer');
             $table->integer('leader')->default(0);
             $table->string('image', 191)->nullable();
