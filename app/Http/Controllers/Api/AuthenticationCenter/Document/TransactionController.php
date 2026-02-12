@@ -10,7 +10,6 @@ use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
-// use setasign\Fpdi\Fpdi;
 use Spatie\PdfToImage\Pdf;
 
 
@@ -37,344 +36,287 @@ class TransactionController extends Controller
     /**
      * Listing function
      */
-    // public function index(Request $request){
-    //     $user = \Auth::user() != null
-    //         ? \Auth::user()
-    //         : (
-    //             auth('api')->user()
-    //                 ? auth('api')->user()
-    //                 : (
-    //                     $request->user() != null
-    //                         ? $request->user()
-    //                         : null
-    //                 )
-    //         );
+    public function index(Request $request){
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : null
+                    )
+            );
 
-    //     /** Format from query string */
-    //     $search = isset( $request->search ) && strlen( $request->search ) > 0 ? $request->search : false ;
-    //     $perPage = isset( $request->perPage ) && intval( $request->perPage ) > 0  ? $request->perPage : 20 ;
-    //     $page = isset( $request->page ) && intval( $request->page ) > 0 ? $request->page : 1 ;
+        /** Format from query string */
+        $search = isset( $request->search ) && strlen( $request->search ) > 0 ? $request->search : false ;
+        $perPage = isset( $request->perPage ) && intval( $request->perPage ) > 0  ? $request->perPage : 20 ;
+        $page = isset( $request->page ) && intval( $request->page ) > 0 ? $request->page : 1 ;
 
-    //     /**
-    //      * លក្ខណចម្រោះទិន្នន័យ
-    //      */
-    //     /**
-    //      * លក្ខណចម្រោះនៃឯកសារ
-    //      */
-    //     $number = isset( $request->number ) && strlen( $request->number ) ? $request->number : false ;
-    //     $objective = isset( $request->objective ) && strlen( $request->objective ) ? $request->objective : false ;
-    //     /**
-    //      * លក្ខណចម្រោះប្រតិបត្តិការបញ្ជូនឯកសារ
-    //      */
-    //     $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
+        /**
+         * លក្ខណចម្រោះទិន្នន័យ
+         */
+        /**
+         * លក្ខណចម្រោះនៃឯកសារ
+         */
+        $number = isset( $request->number ) && strlen( $request->number ) ? $request->number : false ;
+        $objective = isset( $request->objective ) && strlen( $request->objective ) ? $request->objective : false ;
+        /**
+         * លក្ខណចម្រោះប្រតិបត្តិការបញ្ជូនឯកសារ
+         */
+        $sender_id = isset( $request->sender_id ) && intval( $request->sender_id ) > 0 ? $request->sender_id : false ;
 
-    //     $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
-    //     $status = isset( $request->status ) & strlen( $request->status ) > 3
-    //         ? (
-    //             in_array( $request->status , RecordModel::STATUSES )
-    //                 ? $request->status
-    //                 : false
-    //         )
-    //         : false ;
+        $date = isset( $request->date ) & strlen( $request->date ) >=10 ? \Carbon\Carbon::parse( $request->date ) : false ;
+        $status = isset( $request->status ) & strlen( $request->status ) > 3
+            ? (
+                in_array( $request->status , RecordModel::STATUSES )
+                    ? $request->status
+                    : false
+            )
+            : false ;
 
-    //     /**
-    //      * លក្ខណចម្រោះតាមអង្គភាពចុងក្រោយ
-    //      */
-    //     $queryString = [
-    //         // "where" => [
-    //         //     'default' => [
-    //         //         $status != false
-    //         //             ?
-    //         //                 [
-    //         //                     'field' => 'status' ,
-    //         //                     'value' => $status
-    //         //                 ]
-    //         //             :
-    //         //             [
-    //         //                 'field' => 'status' ,
-    //         //                 'value' => null
-    //         //             ]
-    //         //     ],
-    //         //     'in' => [
-    //         //         [
-    //         //             'field' => 'type' ,
-    //         //             'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
-    //         //         ]
-    //         //     ] ,
-    //         //     'not' => [
-    //         //         [
-    //         //             'field' => 'type' ,
-    //         //             'value' => [4]
-    //         //         ]
-    //         //     ] ,
-    //         //     'like' => [
-    //         //         $date != false
-    //         //             ? [
-    //         //                 'field' => 'date_in' ,
-    //         //                 'value' => $date->format('Y-m-d')
-    //         //             ] : []
-    //         //     ]
-    //         // ] ,
-    //         // "pivots" => [
-    //         //     // Transaction Document
-    //         //     $number != false ?
-    //         //     [
-    //         //         "relationship" => 'document',
-    //         //         "where" =>[
-    //         //             // "in" => [
-    //         //             //     "field" => "id",
-    //         //             //     "value" => [$request->unit]
-    //         //             // ],
-    //         //             // "not"=> [
-    //         //             //     [
-    //         //             //         "field" => 'fieldName' ,
-    //         //             //         "value"=> 'value'
-    //         //             //     ]
-    //         //             // ],
-    //         //             "like"=>  [
-    //         //                 [
-    //         //                     "field"=> 'number' ,
-    //         //                     "value"=> $number
-    //         //                 ],
-    //         //                 [
-    //         //                     "field"=> 'objective' ,
-    //         //                     "value"=> $objective
-    //         //                 ],
+        /**
+         * លក្ខណចម្រោះតាមអង្គភាពចុងក្រោយ
+         */
+        $queryString = [
+            // "where" => [
+            //     'default' => [
+            //         $status != false
+            //             ?
+            //                 [
+            //                     'field' => 'status' ,
+            //                     'value' => $status
+            //                 ]
+            //             :
+            //             [
+            //                 'field' => 'status' ,
+            //                 'value' => null
+            //             ]
+            //     ],
+            //     'in' => [
+            //         [
+            //             'field' => 'type' ,
+            //             'value' => isset( $request->type ) && $request->type !== null ? [$request->type] : false
+            //         ]
+            //     ] ,
+            //     'not' => [
+            //         [
+            //             'field' => 'type' ,
+            //             'value' => [4]
+            //         ]
+            //     ] ,
+            //     'like' => [
+            //         $date != false
+            //             ? [
+            //                 'field' => 'date_in' ,
+            //                 'value' => $date->format('Y-m-d')
+            //             ] : []
+            //     ]
+            // ] ,
+            // "pivots" => [
+            //     // Transaction Document
+            //     $number != false ?
+            //     [
+            //         "relationship" => 'document',
+            //         "where" =>[
+            //             // "in" => [
+            //             //     "field" => "id",
+            //             //     "value" => [$request->unit]
+            //             // ],
+            //             // "not"=> [
+            //             //     [
+            //             //         "field" => 'fieldName' ,
+            //             //         "value"=> 'value'
+            //             //     ]
+            //             // ],
+            //             "like"=>  [
+            //                 [
+            //                     "field"=> 'number' ,
+            //                     "value"=> $number
+            //                 ],
+            //                 [
+            //                     "field"=> 'objective' ,
+            //                     "value"=> $objective
+            //                 ],
 
-    //         //             ]
-    //         //         ]
-    //         //     ]
-    //         //     : []
-    //         // ],
-    //         "pagination" => [
-    //             'perPage' => $perPage,
-    //             'page' => $page
-    //         ],
-    //         "search" =>
-    //             $search === false ? [] : [
-    //                 'value' => $search ,
-    //                 'fields' => [
-    //                     'date_in'
-    //                 ]
-    //             ]
-    //         ,
-    //         "order" => [
-    //             'field' => 'date_in' ,
-    //             'by' => 'desc'
-    //         ],
-    //     ];
+            //             ]
+            //         ]
+            //     ]
+            //     : []
+            // ],
+            "pagination" => [
+                'perPage' => $perPage,
+                'page' => $page
+            ],
+            "search" =>
+                $search === false ? [] : [
+                    'value' => $search ,
+                    'fields' => [
+                        'date_in'
+                    ]
+                ]
+            ,
+            "order" => [
+                'field' => 'date_in' ,
+                'by' => 'desc'
+            ],
+        ];
 
-    //     $request->merge( $queryString );
-
-    //     $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
-
-    //     $crud->setRelationshipFunctions([
-    //         /** relationship name => [ array of fields name to be selected ] */
-    //         'document' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
-    //             'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //             'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //         ] , //append number properties
-    //         'sender' => [
-    //             'id' , 'firstname' , 'lastname' , 'avatar_url','countesy_id',
-    //             'officer' => [
-    //                     'id' , 'code' ,
-    //                     // people => [ 'id' , 'firstname' , 'lastname' ]
-    //             ]
-    //         ] , //append avatar_url properties
-    //         'receivers' => [ 'id' , 'code' ],
-    //         'previous' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             'document' => [
-    //                'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //             //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //             ] ,
-    //             'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id'] ,
-    //             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-    //         ],
-    //         'next' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             'document' => [
-    //                 'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //                 // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //                 // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //             ] ,
-    //             'sender' => [ 'id' , 'firstname' , 'lastname' , 'countesy_id' ] ,
-    //             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-    //         ],
-    //     ]);
-
-
-    //     $builder = $crud->getListBuilder();
-
-    //     /**
-    //      * 1. ចម្រោះប្រតិបត្តិការឯកសារដោយយោងតាមអ្នកទទួល
-    //      * 2. ចម្រោះប្រតិបត្តិការឯកសារតាមអ្នកបញ្ជូន
-    //      */
-    //     $builder->where(function($query){
-    //         $query->whereNull('previous_transaction_id')
-    //         ->orWhere('previous_transaction_id',0);
-    //     })
-    //     ->where( function($query) use( $user ){
-    //         $query->where('sender_id' , $user->id )
-    //         ->orWhereHas('receivers',function($queryBuilder) use( $user ){
-    //             $queryBuilder->whereIn('receiver_id', [ $user->officer->id ] );
-    //         });
-    //     });
-
-    //     $responseData = $crud->pagination(true, $builder);
-
-    //     $responseData['records'] = $responseData['records']->map(function($record){
-    //         $receivers = collect( $record['receivers'] )->pluck('id')->toArray();
-    //         $record['receivers'] = \App\Models\Officer\Officer::whereIn( 'id', $receivers )->get()->map(function($receiver){
-    //             return [
-    //                 'id' => $receiver->id ,
-    //                 'code' => $receiver->code ,
-    //                 'user' => [
-    //                     'id' => $receiver->user->id ,
-    //                     'fullname' => ( $receiver->countesy != null ? $receiver->countesy->name : '' ) . ' '. $receiver->user->lastname . ' ' . $receiver->user->firstname
-    //                 ]
-    //             ];
-    //         });
-    //         // Add two if statement for fullname avatar
-    //         if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
-    //             $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
-    //         }
-    //         if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
-    //             $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
-    //         }
-            
-    //        //==========ទាញយកPDf Thumbnail===============
-    //    //    $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
-    //        $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-    //        if (Storage::disk('public')->exists($thumbnailPath)) {
-    //            $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
-    //        } else {
-    //            $record['document']['thumbnail'] = null; // optional: placeholder
-    //        }
-    //        //=============================================
-            
-    //         if( $record['sender']['officer'] != null ){
-    //             $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
-    //             $record['sender']['officer']['people'] = $officer->people;
-    //             $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
-    //                 $job->countesy;
-    //                 if( $job->organizationStructurePosition != null ){
-    //                     $job->organizationStructurePosition->position;
-    //                     if( $job->organizationStructurePosition->organizationStructure != null ){
-    //                         $job->organizationStructurePosition->organizationStructure->organization;
-    //                     }
-    //                 }
-    //                 return $job;
-    //             }
-    //             $record['sender']['countesy'] = $officer->jobs->first()->countesy->name;
-    //            );
-    //         }
-    //         // if( $record['document'] != null ){
-    //         //     if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
-    //         //         $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-    //         //         // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
-    //         //     }
-    //         //     if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
-    //         //         $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-    //         //         // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
-    //         //     }
-    //         // }
-
-    //         // Add an if statement to respone with filesize
-    //         if( $record['document'] != null ){
-    //             $record['document']['pdf_file_size'] = 0 ;
-    //             $record['document']['word_file_size'] = 0 ;
-    //             if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
-    //                 $OriginalPath = $record['document']['pdf_file'];
-    //                 $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-    //                 $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;     //uncomment to get filesize
-    //             }
-    //             if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
-    //                 $OriginalPath = $record['document']['word_file'];
-    //                 $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-    //                 $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
-    //             }
-    //         }
-    //         return $record;
-    //     });
-    //     $responseData['message'] = __("crud.read.success");
-    //     $responseData['ok'] = true ;
-    //     return response()->json($responseData, 200);
-    // }
-
-    public function index(Request $request)
-    {
-        $user = \Auth::user()
-            ?? auth('api')->user()
-            ?? $request->user()
-            ?? null;
+        $request->merge( $queryString );
 
         $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
 
         $crud->setRelationshipFunctions([
+            /** relationship name => [ array of fields name to be selected ] */
             'document' => [
-                'id','objective','word_file','pdf_file','number'
-            ],
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
+                'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'editor' => [ 'id' , 'firstname' , 'lastname' ]
+            ] , //append number properties
             'sender' => [
-                'id','firstname','lastname','avatar_url',
-                'officer' => ['id','code']
-            ],
-            'receivers' => ['id','code'],
+                'id' , 'firstname' , 'lastname' , 'avatar_url','countesy_id',
+                'officer' => [
+                        'id' , 'code' ,
+                        // people => [ 'id' , 'firstname' , 'lastname' ]
+                ]
+            ] , //append avatar_url properties
+            'receivers' => [ 'id' , 'code' ],
             'previous' => [
-                'id','objective','word_file','pdf_file',
-                'sender' => ['id','firstname','lastname'],
-                'receivers' => ['id','firstname','lastname'],
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'document' => [
+                   'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
+                ] ,
+                'sender' => ['id' , 'firstname' , 'lastname', 'countesy_id'] ,
+                'receivers' => ['id' , 'firstname' , 'lastname'],
             ],
             'next' => [
-                'id','objective','word_file','pdf_file',
-                'sender' => ['id','firstname','lastname'],
-                'receivers' => ['id','firstname','lastname'],
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'document' => [
+                    'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                    // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                    // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
+                ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname' , 'countesy_id' ] ,
+                'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
             ],
         ]);
 
+
         $builder = $crud->getListBuilder();
 
-        $builder->where(function ($query) {
+        /**
+         * 1. ចម្រោះប្រតិបត្តិការឯកសារដោយយោងតាមអ្នកទទួល
+         * 2. ចម្រោះប្រតិបត្តិការឯកសារតាមអ្នកបញ្ជូន
+         */
+        $builder->where(function($query){
             $query->whereNull('previous_transaction_id')
-                ->orWhere('previous_transaction_id', 0);
+                  ->orWhere('previous_transaction_id',0);
         })
+        // ->where( function($query) use( $user ){
+        //     $query->where('sender_id' , $user->id )
+
         ->where(function ($query) use ($user) {
-            $query->where('sender_id', $user->id)
-                ->orWhereHas('receivers', function ($q) use ($user) {
-                    $q->whereIn('receiver_id', [$user->officer->id]);
+            if (!$user) {
+                return;}
+                $query->where('sender_id', $user->id)
+                ->orWhereHas('receivers', function ($queryBuilder) use ($user){
+                    if ($user->officer) {
+                        $queryBuilder->whereIn('receiver_id', [$user->officer->id]);
+                    }
+
                 });
         });
 
+        //     ->orWhereHas('receivers',function($queryBuilder) use( $user ){
+        //         $queryBuilder->whereIn('receiver_id', [ $user->officer->id ] );
+        //     });
+        // });
+
         $responseData = $crud->pagination(true, $builder);
 
-        $responseData['records'] = $responseData['records']->map(function ($record) {
-
-            /** Sender fullname */
-            if (!empty($record['sender']['firstname']) && !empty($record['sender']['lastname'])) {
-                $record['sender']['fullname'] = $record['sender']['lastname'].' '.$record['sender']['firstname'];
+        $responseData['records'] = $responseData['records']->map(function($record){
+            $receivers = collect( $record['receivers'] )->pluck('id')->toArray();
+            $record['receivers'] = \App\Models\Officer\Officer::whereIn( 'id', $receivers )->get()->map(function($receiver){
+                return [
+                    'id' => $receiver->id ,
+                    'code' => $receiver->code ,
+                    'user' => [
+                        'id' => $receiver->user->id ,
+                        'fullname' => ( $receiver->countesy != null ? $receiver->countesy->name : '' ) . ' '. $receiver->user->lastname . ' ' . $receiver->user->firstname
+                    ]
+                ];
+            });
+            // Add two if statement for fullname avatar
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
             }
-            
-            // if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
-            //     $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
+
+           //==========ទាញយកPDf Thumbnail===============
+       //    $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
+           $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+           if (Storage::disk('public')->exists($thumbnailPath)) {
+               $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+           } else {
+               $record['document']['thumbnail'] = null;
+           }
+
+            // if( $record['sender']['officer'] != null ){
+            //     $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
+            //     $record['sender']['officer']['people'] = $officer->people;
+
+            //     $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
+            //         $job->countesy;
+            //         if( $job->organizationStructurePosition != null ){
+            //             $job->organizationStructurePosition->position;
+            //             if( $job->organizationStructurePosition->organizationStructure != null ){
+            //                 $job->organizationStructurePosition->organizationStructure->organization;
+            //             }
+            //         }
+            //         return $job;
+            //     }
+            //     $record['sender']['countesy'] = $officer->jobs->first()->countesy->name;
+            //    );
             // }
 
-            /** Sender avatar */
-            if (!empty($record['sender']['avatar_url']) && Storage::disk('public')->exists($record['sender']['avatar_url'])) {
-                $record['sender']['avatar_url'] = Storage::disk('public')->url($record['sender']['avatar_url']);
-            }
+            if ($record['sender']['officer'] != null) {
 
-            //==========ទាញយកPDf Thumbnail===============
-            // $record['document']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg');
-            $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-            if (Storage::disk('public')->exists($thumbnailPath)) {
-                $record['document']['pdf_thumbnail'] = Storage::disk('public')->url($thumbnailPath);
-            } else {
-                $record['document']['pdf_thumbnail'] = null; // optional: placeholder
+                $officer = \App\Models\Officer\Officer::with([
+                    'people.countesy',
+                    'user'
+                ])->find($record['sender']['officer']['id']);
+
+                if ($officer) {
+
+                    $countesyName = optional($officer->people?->countesy)->name ?? '';
+
+                    $fullname = $officer->user->lastname . ' ' . $officer->user->firstname;
+
+                    $record['sender'] = [
+                        'id' => $officer->id,
+                        'code' => $officer->code,
+                        'fullname' => $fullname,
+                        'Countesy' => $countesyName
+                    ];
+                }
             }
-            //=============================================
-            
+            // if( $record['document'] != null ){
+            //     if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+            //         $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+            //         // $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size($record['document']['pdf_file']) / 1024, 2) . " KB" ;
+            //     }
+            //     if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+            //         $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+            //         // $record['document']['word_file_size'] = round( \Storage::disk('public')->path($record['document']['word_file']) / 1024, 2) . " KB" ;
+            //     }
+            // }
+
+            // Add an if statement to respone with filesize
             if( $record['document'] != null ){
                 $record['document']['pdf_file_size'] = 0 ;
                 $record['document']['word_file_size'] = 0 ;
@@ -389,291 +331,167 @@ class TransactionController extends Controller
                     $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
                 }
             }
-            if( $record['sender']['officer'] != null ){
-                $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
-                $record['sender']['countesy_name'] = $officer->jobs->first()->countesy->name ? $officer->jobs->first()->countesy->name : null;
+            return $record;
+
+        });
+        $responseData['message'] = __("crud.read.success");
+        $responseData['ok'] = true ;
+        return response()->json($responseData, 200);
+    }
+
+    public function read(Request $request){
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
+
+        $record = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
+        if( $record == null ){
+            return response()->json([
+                'ok' => false ,
+                'record' => $record ,
+                'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
+            ],403);
+        }
+
+        // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
+        // if( ( $receiver = $record->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
+        //     // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
+        //     if( $receiver->seen_at == null || strlen( $receiver->seen_at ) <= 0 ){
+        //         $receiver->update(['seen_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+        //     }
+        // }else{
+        //     return response()->json([
+        //         'ok' => false ,
+        //         'message' => 'អ្នកមិនមានសិទ្ធិក្នុងប្រតិបត្តិការនេះទេ។'
+        //     ],403);
+        // }
+        $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
+        $crud->setRelationshipFunctions([
+            /** relationship name => [ array of fields name to be selected ] */
+            'document' => [
+                'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
+                'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                'editor' => [ 'id' , 'firstname' , 'lastname' ]
+            ] ,
+            'sender' => [
+                'id' , 'firstname' , 'lastname' , 'avatar_url',
+                'officer' => [
+                        'id' , 'code',
+                ]
+            ] ,
+            'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
+
+            'previous' => [
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'document' => [
+                   'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
+                ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id'] ,
+                'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
+            ],
+            'next' => [
+                'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                'document' => [
+                    'id' , 'objective' , 'word_file' , 'pdf_file' ,
+                    // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
+                    // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
+                ] ,
+                'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id', ] ,
+                'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
+            ],
+        ]);
+
+        $builder = $crud->getListBuilder();
+
+        $builder->where('id' , $record->id );
+
+        $responseData = $crud->pagination(true, $builder);
+        $responseData['records'] = $responseData['records']->map(function($record){
+            // Add two if state for fullnameand avatarurl
+            if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
+                $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
+            }
+            if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
+                $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
+            }
+            //==========ទាញយកPDf Thumbnail===============
+            $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+            if (Storage::disk('public')->exists($thumbnailPath)) {
+                $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+            } else {
+                $record['document']['thumbnail'] = null; // optional: placeholder
+            }
+            //=============================================
+            // if( $record['sender']['officer'] != null ){
+            //     $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
+            //     $record['sender']['officer']['people'] = $officer->people;
+            //     $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
+            //         $job->countesy;
+            //         if( $job->organizationStructurePosition != null ){
+            //             $job->organizationStructurePosition->position;
+            //             if( $job->organizationStructurePosition->organizationStructure != null ){
+            //                 $job->organizationStructurePosition->organizationStructure->organization;
+            //             }
+            //         }
+            //         return $job;
+            //     });
+            // }
+
+            if ($record['sender']['officer'] != null) {
+                $officer = \App\Models\Officer\Officer::with([
+                    'people.countesy',
+                    'user'
+                ])->find($record['sender']['officer']['id']);
+
+                if ($officer) {
+
+                    $countesyName = optional($officer->people?->countesy)->name ?? '';
+
+                    $fullname = $officer->user->lastname . ' ' . $officer->user->firstname;
+
+                    $record['sender'] = [
+                        'id' => $officer->id,
+                        'code' => $officer->code,
+                        'fullname' => $fullname,
+                        'Countesy' => $countesyName
+                    ];
+                }
             }
 
-            // /** Replace countesy_id → countesy_name */
-            // $sender = \App\Models\User::find($record['sender']['id']);
-            // $record['sender']['countesy_name'] =
-            //     optional($sender?->people?->countesy)->name;
-
-            // unset($record['sender']['countesy_id']);
-            
-            /** Receivers fullname with countesy */
-            $receivers = collect($record['receivers'])->pluck('id')->toArray();
-            $record['receivers'] = \App\Models\Officer\Officer::whereIn('id',$receivers)
-                ->get()
-                ->map(function ($receiver) {
-                    return [
-                        'id' => $receiver->id,
-                        'code' => $receiver->code,
-                        'user' => [
-                            'id' => $receiver->user->id,
-                            'fullname' =>
-                                optional($receiver->countesy)->name.' '.
-                                $receiver->user->lastname.' '.$receiver->user->firstname
-                        ]
-                    ];
-                });
-
+            if( $record['document'] != null ){
+                $record['document']['pdf_file_size'] =  0;
+                $record['document']['word_file_size'] = 0 ;
+                if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
+                    $OriginalPath = $record['document']['pdf_file'];
+                    $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
+                    $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;     //uncomment to get filesize
+                }
+                if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
+                    $OriginalPath = $record['document']['word_file'];
+                    $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
+                    $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
+                }
+            }
+            $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
             return $record;
         });
 
         return response()->json([
-            'message' => __('crud.read.success'),
-            'records' => $responseData['records'],
+            'message' => __("crud.read.success") ,
+            'record' => $responseData['records']->first() ,
             'ok' => true
         ], 200);
     }
-
-
-
-    // public function read(Request $request){
-    //     $user = \Auth::user() != null
-    //         ? \Auth::user()
-    //         : (
-    //             auth('api')->user()
-    //                 ? auth('api')->user()
-    //                 : (
-    //                     $request->user() != null
-    //                         ? $request->user()
-    //                         : 0
-    //                 )
-    //         );
-
-    //     $record = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
-    //     if( $record == null ){
-    //         return response()->json([
-    //             'ok' => false ,
-    //             'record' => $record ,
-    //             'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
-    //         ],403);
-    //     }
-
-    //     // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
-    //     // if( ( $receiver = $record->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
-    //     //     // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
-    //     //     if( $receiver->seen_at == null || strlen( $receiver->seen_at ) <= 0 ){
-    //     //         $receiver->update(['seen_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-    //     //     }
-    //     // }else{
-    //     //     return response()->json([
-    //     //         'ok' => false ,
-    //     //         'message' => 'អ្នកមិនមានសិទ្ធិក្នុងប្រតិបត្តិការនេះទេ។'
-    //     //     ],403);
-    //     // }
-
-    //     $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
-
-    //     $crud->setRelationshipFunctions([
-    //         /** relationship name => [ array of fields name to be selected ] */
-    //         'document' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' , 'number',
-    //             'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //             'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //         ] ,
-    //         'sender' => [
-    //             'id' , 'firstname' , 'lastname' , 'avatar_url',
-    //             'officer' => [
-    //                     'id' , 'code',
-    //             ]
-    //         ] ,
-    //         'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-
-    //         'previous' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             'document' => [
-    //                'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             //    'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //             //    'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //             ] ,
-    //             'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id'] ,
-    //             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-    //         ],
-    //         'next' => [
-    //             'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //             'document' => [
-    //                 'id' , 'objective' , 'word_file' , 'pdf_file' ,
-    //                 // 'author' => [ 'id' , 'firstname' , 'lastname' ] ,
-    //                 // 'editor' => [ 'id' , 'firstname' , 'lastname' ]
-    //             ] ,
-    //             'sender' => [ 'id' , 'firstname' , 'lastname', 'countesy_id', ] ,
-    //             'receivers' => [ 'id' , 'firstname' , 'lastname'  ],
-    //         ],
-    //     ]);
-
-    //     $builder = $crud->getListBuilder();
-
-    //     $builder->where('id' , $record->id );
-
-    //     $responseData = $crud->pagination(true, $builder);
-    //     $responseData['records'] = $responseData['records']->map(function($record){
-    //         // Add two if state for fullnameand avatarurl
-    //         if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
-    //             $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
-    //         }
-    //         if($record['sender']['avatar_url'] != null && strlen($record['sender']['avatar_url']) > 0 && \Storage::disk('public')->exists( $record['sender']['avatar_url'] ) ){
-    //             $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
-    //         }
-    //         //==========ទាញយកPDf Thumbnail===============
-    //         $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-    //         if (Storage::disk('public')->exists($thumbnailPath)) {
-    //             $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
-    //         } else {
-    //             $record['document']['thumbnail'] = null; // optional: placeholder
-    //         }
-    //         //============================================= 
-    //         if( $record['sender']['officer'] != null ){
-    //             $officer = \App\Models\Officer\Officer::find( $record['sender']['officer']['id'] );
-    //             $record['sender']['officer']['people'] = $officer->people;
-    //             $record['sender']['officer']['jobs'] = $officer->jobs->map(function($job){
-    //                 $job->countesy;
-    //                 if( $job->organizationStructurePosition != null ){
-    //                     $job->organizationStructurePosition->position;
-    //                     if( $job->organizationStructurePosition->organizationStructure != null ){
-    //                         $job->organizationStructurePosition->organizationStructure->organization;
-    //                     }
-    //                 }
-    //                 return $job;
-    //             });
-    //         }
-
-    //         if( $record['document'] != null ){
-    //             $record['document']['pdf_file_size'] =  0;
-    //             $record['document']['word_file_size'] = 0 ;
-    //             if( $record['document']['pdf_file'] != null && strlen( $record['document']['pdf_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['pdf_file'] ) ){
-    //                 $OriginalPath = $record['document']['pdf_file'];
-    //                 $record['document']['pdf_file'] = \Storage::disk('public')->url( $record['document']['pdf_file'] );
-    //                 $record['document']['pdf_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;     //uncomment to get filesize
-    //             }
-    //             if( $record['document']['word_file'] != null && strlen( $record['document']['word_file'] ) > 0 && \Storage::disk('public')->exists( $record['document']['word_file'] ) ){
-    //                 $OriginalPath = $record['document']['word_file'];
-    //                 $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
-    //                 $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
-    //             }
-    //         }
-    //         $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
-    //         return $record;
-    //     });
-
-    //     return response()->json([
-    //         'message' => __("crud.read.success") ,
-    //         'record' => $responseData['records']->first() ,
-    //         'ok' => true
-    //     ], 200);
-    // }
-
-    public function read(Request $request)
-{
-    $user = \Auth::user()
-        ?? auth('api')->user()
-        ?? $request->user()
-        ?? 0;
-
-    $record = intval($request->id) > 0
-        ? RecordModel::find($request->id)
-        : null;
-
-    if ($record == null) {
-        return response()->json([
-            'ok' => false,
-            'record' => null,
-            'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
-        ], 403);
-    }
-
-    $crud = new CrudController(new RecordModel(), $request, $this->selectFields);
-
-    $crud->setRelationshipFunctions([
-        'document' => [
-            'id','objective','word_file','pdf_file','number'
-        ],
-        'sender' => [
-            'id','firstname','lastname','avatar_url',
-            'officer' => ['id','code']
-        ],
-        'receivers' => ['id','firstname','lastname'],
-        'previous' => [
-            'id','objective','word_file','pdf_file',
-            'sender' => ['id','firstname','lastname'],
-        ],
-        'next' => [
-            'id','objective','word_file','pdf_file',
-            'sender' => ['id','firstname','lastname'],
-        ],
-    ]);
-
-    $builder = $crud->getListBuilder();
-    $builder->where('id', $record->id);
-
-    $responseData = $crud->pagination(true, $builder);
-
-    $responseData['records'] = $responseData['records']->map(function ($record) {
-
-        /** Sender fullname */
-        if (!empty($record['sender']['firstname']) && !empty($record['sender']['lastname'])) {
-            $record['sender']['fullname'] =
-                $record['sender']['lastname'].' '.$record['sender']['firstname'];
-        }
-
-        /** Sender avatar */
-        if (!empty($record['sender']['avatar_url']) &&
-            \Storage::disk('public')->exists($record['sender']['avatar_url'])) {
-            $record['sender']['avatar_url'] =
-                \Storage::disk('public')->url($record['sender']['avatar_url']);
-        }
-
-        //==========ទាញយកPDf Thumbnail===============
-        $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-        if (Storage::disk('public')->exists($thumbnailPath)) {
-            $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
-        } else {
-            $record['document']['thumbnail'] = null; // optional: placeholder
-        }
-        //=============================================
-
-        /** Replace countesy_id → countesy_name */  
-        $sender = \App\Models\User::find($record['sender']['id']);
-        $record['sender']['countesy_name'] =
-            optional($sender?->people?->countesy)->name;
-
-        unset($record['sender']['countesy_id']);
-
-        /** Filesize in MB */
-        if ($record['document']) {
-            foreach (['pdf_file','word_file'] as $file) {
-                $sizeKey = $file.'_size';
-                $record['document'][$sizeKey] = 0;
-
-                if (!empty($record['document'][$file]) &&
-                    \Storage::disk('public')->exists($record['document'][$file])) {
-
-                    $path = $record['document'][$file];
-                    $record['document'][$file] =
-                        \Storage::disk('public')->url($path);
-
-                    $record['document'][$sizeKey] =
-                        round(\Storage::disk('public')->size($path)/(1024*1024),2).' MB';
-                }
-            }
-        }
-
-        $record['transactions'] =
-            RecordModel::find($record['id'])->getTimeline();
-
-        return $record;
-    });
-
-    return response()->json([
-        'message' => __('crud.read.success'),
-        'record' => $responseData['records']->first(),
-        'ok' => true
-    ], 200);
-}
-
-
 
     public function store(Request $request){
         $receivers = explode(',',$request->receivers);
@@ -800,6 +618,7 @@ class TransactionController extends Controller
             'message' => 'ជោគជ័យ'
         ],200);
     }
+
     public function changeReceiver(Request $request){
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
         $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
@@ -880,11 +699,11 @@ class TransactionController extends Controller
         // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន ក្នុងករណីដែលជាឯកសារ
         if(
             // ត្រងចំណុចនេះមានន័យថាជាការចាប់ផ្ដើមដំបូង។ សម្រាប់ការបញ្ជូនបន្តដែលមិនមែនផ្ដើមដំបូង អនុញ្ញាតឱ្យមិនមានឯកសារ។
-            $transaction->previous_transaction_id == null && 
-            ( 
+            $transaction->previous_transaction_id == null &&
+            (
                 ( $transaction->document == null  ) ||
                 (
-                    $transaction->document != null && 
+                    $transaction->document != null &&
                     ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) &&
                     ( $transaction->document->pdf_file == null || strlen( $transaction->document->pdf_file ) <= 0 )
                 )
@@ -895,7 +714,7 @@ class TransactionController extends Controller
                 'message' => 'ប្រតិបត្តិការនៅដើមគ្រាមិនអាចគ្មានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
             ],422);
         }
-    
+
         $transaction->
         $transaction->send();
         // ជូនដំណឹងទៅអ្នកទទួល។ ការងារនេះនិងបន្តនៅពេលក្រោយ។
@@ -1053,7 +872,7 @@ class TransactionController extends Controller
                 //For window require to install imagick PHP 8.2 TS, imagemagick and ghostscript latest version,
                 //for linux just composer require spatie/pdf-to-image
                 // បង្កើត Thumbnail សម្រាប់ឯកសារ​ PDF
-                // try{ 
+                // try{
                 //     if (class_exists(\Imagick::class)){
                 //         $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
                 //         // Create folder if it doesn't exist
@@ -1083,7 +902,7 @@ class TransactionController extends Controller
                 //         'reason' => $e->getMessage()
                 //     ]);
                 // }
-                
+
                  $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
                         // Create folder if it doesn't exist
                         if (!file_exists($thumbnailFolder)) {
@@ -1101,7 +920,7 @@ class TransactionController extends Controller
                         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
                         $pdf->save($thumbnailPath);
 
-                
+
 
                 // លុបឯកសារយោងដែលមានមុនពេលដាក់ឯកសារថ្មី
                 if( Storage::disk('public')->exists( $path_to_pdf_file ) ){
@@ -1261,7 +1080,6 @@ class TransactionController extends Controller
         ], 403);
     }
 }
-
 
     public function downloadWord(Request $request){
         $user = \Auth::user() != null
@@ -1816,7 +1634,6 @@ public function restoreFocalReceiver($id)
         'message' => 'Organization focal receiver restored successfully'
     ]);
 }
-
 
     private function addReceiverBaseOnOrganizationStructure($transaction , $organizationStructureId){
         $user = \Auth::user() != null
