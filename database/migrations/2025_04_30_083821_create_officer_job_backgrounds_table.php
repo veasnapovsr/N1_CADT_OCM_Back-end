@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('officer_job_backgrounds', function (Blueprint $table) {
             $table->id();
             $table->integer('officer_id')->nullable(false);
+            $table->integer('officer_job_id')->nullable(true);
             $table->string('organization',191)->nullable(false);
             $table->string('sub_organization',191)->nullable(false);
             $table->string('position',191)->nullable(false);

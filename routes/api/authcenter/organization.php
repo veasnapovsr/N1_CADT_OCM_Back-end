@@ -44,17 +44,6 @@ Route::group([
       Route::post('position/add',[OrganizationController::class,'addPosition']);
       Route::delete('position/{id}/delete',[OrganizationController::class,'deletePositionNode']);
       Route::put('position/permission/toggle',[ OrganizationController::class , 'positionPermissionToggle']);
-
-      /**
-       * Officer Job 
-       */
-      Route::get('/', [OfficerJobController::class, 'index']);
-      Route::post('/', [OfficerJobController::class, 'addOfficeJob']);
-      Route::get('{id}/read', [OfficerJobController::class, 'read']);
-      Route::put('updateOfficerJob', [OfficerJobController::class, 'updateOfficerJob']);
-      Route::delete('destroyOfficerJob', [OfficerJobController::class, 'destroyOfficerJob']);
-      // Route::get('/users/{id}', [OfficerJobController::class, 'show']);
-
       
 });
 Route::group([

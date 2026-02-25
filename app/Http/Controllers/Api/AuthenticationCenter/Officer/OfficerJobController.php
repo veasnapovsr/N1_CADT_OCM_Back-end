@@ -142,13 +142,6 @@ class OfficerJobController extends Controller
 
     public function addOfficeJob(Request $request)
     {
-        // $user = \Auth::user() ;
-        // if( $user == null ){
-        //     return response()->json([
-        //         'ok' => false ,
-        //         'message' => 'សូមបញ្ជាក់អត្តសញ្ញាណ។'
-        //     ],403);
-        // }
         $user = \Auth::user() != null
             ? \Auth::user()
             : (
@@ -185,8 +178,7 @@ class OfficerJobController extends Controller
                 'message' => 'ទិន្នន័យមន្ត្រីនេះមិនមានក្នុងប្រព័ន្ធ។'
             ], 200);
         }
-        // Optional duplicate check (same position + officer + start date)
-        // $OfficerJob = \App\Models\Officer\OfficerJob;
+        
         $existing = \App\Models\Officer\OfficerJob::where('organization_structure_position_id', $request->organization_structure_position_id)
             ->where('officer_id', $request->officer_id)
             ->where('start', $request->start)
@@ -226,15 +218,14 @@ class OfficerJobController extends Controller
             'organization' => $organizationName,
             'sub_organization' => $suborganizationName,
             'position' => $positionName,
-            // 'pdf' => $request->pdf,
-            // 'skill_of_position' => $request->skill_of_position ?? null,
             'start' => $request->start ?? \Carbon\Carbon::now()->format('Y-m-d'),
-            'created_by' => $user->id,
-            'updated_by' => $user->id
+            'pdf' => $request->pdf,
+            'skill_of_position' => $request->skill_of_position ?? null,
+            'sector' => $$request->sector,
+            'created_by' => $user->id
         ]);
 
         $officerJob = \App\Models\Officer\OfficerJob::create([
-            // 'organization_structure_id' => $organizationStructureId,  // <--- added here
             'organization_structure_position_id' => $request->organization_structure_position_id,
             //ប្រើនៅពេលដែលតួនាទីរបស់មន្រ្តីមាន​សិទ្ធិស្មើនិងតួនាទីណាមួយ
             'unofficial_position_id' => $request->organization_structure_unofficial_position_id,
@@ -242,7 +233,6 @@ class OfficerJobController extends Controller
             'countesy_id' => $request->countesy_id ?? null,
             'start' => $request->start ?? \Carbon\Carbon::now()->format('Y-m-d'),
             'created_by' => $user->id,
-            'updated_by' => $user->id
         ]);
         $officeJobBackground->update(['officer_job_id'=>$officerJob->id]);
 
@@ -279,7 +269,6 @@ class OfficerJobController extends Controller
         }
 
         // Update fields only if provided, otherwise keep previous values
-        // $officerJob->organization_structure_id = $request->organization_structure_id ?? $officerJob->organization_structure_id;
         $officerJob->organization_structure_position_id = $request->organization_structure_position_id ?? $officerJob->organization_structure_position_id;
         $officerJob->unofficial_position_id = $request->unofficial_position_id ?? $officerJob->unofficial_position_id;
         $officerJob->officer_id = $request->officer_id ?? $officerJob->officer_id;
