@@ -2,7 +2,7 @@
 namespace App\Models\BlockChain;
 use App\Models\BlockChain\Block;
 
-class Blockchain
+class BlockChain
 {
     private array $chain;
 

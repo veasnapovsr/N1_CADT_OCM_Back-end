@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Admin;
+namespace App\Http\Controllers\Api\Card;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -9,7 +9,7 @@ use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 
-class MeetingController extends Controller
+class CommentController extends Controller
 {
     private $selectFields = [
         'id',

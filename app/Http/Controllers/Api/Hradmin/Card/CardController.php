@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Hradmin\Attendant;
+namespace App\Http\Controllers\Api\Hradmin\Card;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

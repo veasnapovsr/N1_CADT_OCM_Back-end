@@ -1,5 +1,5 @@
 <?php 
-use App\Http\Controllers\Api\Hradmin\OfficerController;
+use App\Http\Controllers\Api\AuthenticationCenter\OfficerController;
 /** Officer SECTION */
 Route::group([
   'prefix' => 'officers' ,
@@ -17,6 +17,8 @@ Route::group([
      * Get all records
      */
     Route::get('',[OfficerController::class,'index']);
+    // Route::get('{id}/read',[OfficerController::class,'read']);
+    Route::get('{id}/mybackground',[OfficerController::class,'mybackground']);
     /**
      * Create a record
      */
@@ -44,5 +46,7 @@ Route::group([
   /**
    * Get a record with public_key
    */
+  Route::get('signatures',[OfficerController::class,'officersSignatures']);
   Route::get('{key}/read',[OfficerController::class,'readPublic']);
+  Route::get('{key}/publicphoto',[OfficerController::class,'publicPhoto']);
 });

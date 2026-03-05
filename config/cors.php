@@ -23,7 +23,9 @@ return [
         'api/admin/*' ,
         'api/authcenter/*' ,
         'api/meeting/*' ,
-        'api/client/*' 
+        'api/client/*'  ,
+        'api/attendant/*' ,
+        'api/hradmin/*'
     ],
 
     'allowed_methods' => [

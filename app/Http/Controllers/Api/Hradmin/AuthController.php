@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Api\Hradmin;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Notifications\client\SignupActivate;
-use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
 use Avatar;
-use Illuminate\Http\File;
 use Storage;
+use Illuminate\Http\File;
+use Illuminate\Support\Collection;
 
 class AuthController extends Controller
 {
@@ -35,6 +35,14 @@ class AuthController extends Controller
         ]);
 
         $user = new User([
+            'public_key' => md5( 
+                \Carbon\Carbon::now()->format('YmdHis') 
+                . $request->firstname
+                . $request->lastname
+                . $request->phone
+                . $request->email
+                . bcrypt($request->password)
+            ) ,
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
             'name' => $request->lastname . ' ' . $request->firstname ,
@@ -43,8 +51,9 @@ class AuthController extends Controller
             'email' => $request->email,
             'active' => 1 , // Unactive user
             'password' => bcrypt($request->password),
-            'activation_token' => strtoupper( Str::random(6) )
+            'activation_token' => Str::random(32)
         ]);
+
         $user->save();
 
         // $avatar = Avatar::create($user->name)->getImageObject()->encode('png');
@@ -66,15 +75,7 @@ class AuthController extends Controller
         ]);
         $user->people_id = $person->id ;
         $user->save();
-
-        /**
-         * Assign role to user
-         */
-        $clientClientRole = \App\Models\Role::where('name','Client')->first();
-        if( $clientClientRole != null ){
-            $user->assignRole( $clientClientRole );
-        }
-
+        
         $user->notify(new SignupActivate($user));
 
         return response()->json([
@@ -106,23 +107,23 @@ class AuthController extends Controller
         $credentials['deleted_at'] = null;
 
         if(!Auth::attempt($credentials)){
-            if( \App\Models\User::where('email', $request->email)->first() != null ){
+            if( User::where('email', $request->email) != null ){
                 /**
                  * Account does exist but the password might miss type
                  */
                 return response()->json([
                     'message' => 'សូមពិនិត្យពាក្យសម្ងាត់របស់អ្នក !'
-                ], 401);
+                ], 403);
             }else{
                 /**
                  * Account does exist but the password might miss type
                  */
                 return response()->json([
                     'message' => 'អ៊ីមែលរបស់អ្នកមិនមានក្នុងប្រព័ន្ធឡើយ !'
-                ], 401);
+                ], 403);
             }
         }
-            
+
         /**
          * Retrieve account
          */
@@ -147,36 +148,35 @@ class AuthController extends Controller
                     )
             ]
         );
-        
+
         /**
          * Check disability
          */
         if( $user->active <= 0 ) {
-            /**
-            * Account has been disabled
-            */
-           return response()->json([
-               'message' => 'គណនីនេះត្រូវបានបិទជាបណ្ដោះអាសន្ន។'
-           ], 403);
+             /**
+             * Account has been disabled
+             */
+            return response()->json([
+                'message' => 'គណនីនេះត្រូវបានបិទជាបណ្ដោះអាសន្ន។'
+            ], 403);
         }
         /**
          * Check roles
          */
-        if( empty( array_intersect( 
-            // Retreive all the roles that authenticated user has
-            $user->roles->pluck('id')->toArray() 
-            // Retreive allowed roles
-            , \App\Models\Role::backend()->pluck('id')->push(1)->toArray() ) 
-            ) 
-        ){
+        if( empty( array_intersect( $user->roles->pluck('id')->toArray() , \App\Models\Role::where('tag','core_service')->pluck('id')->toArray() ) ) ){
             /**
              * User seem does not have any right to login into backend / core service
              */
             return response()->json([
-                'message' => "គណនីនេះមិនមានសិទ្ធិប្រើប្រព័ន្ធឡើយ។"
+                'message' => "គណនីនេះមិនមានសិទ្ធិគ្រប់គ្រាន់។"
             ],403);
         }
 
+        /**
+         * Check user role
+         */
+
+        
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
         if ($request->remember_me)
@@ -184,15 +184,54 @@ class AuthController extends Controller
         $token->save();
 
         $user = Auth::user();
+        
         if( $user ){
-            // $user->avatar_url = null ;
             if( $user->avatar_url !== null && Storage::disk('public')->exists( $user->avatar_url ) ){
                 $user->avatar_url = Storage::disk("public")->url( $user->avatar_url  );
+            }else{
+                $user->avatar_url = null ;
             }
         }
-        ;
-        $user->officer != null ? ( $user->officer->people != null ? $user->officer->people : null ) : null ;
-        $user->officer != null ? ( $user->officer->card != null ? $user->officer->card : null ) : null ;
+
+        if( $user->officer == null ) {
+            return response()->json([
+                'ok' => false ,
+                'message' => 'គណនីនេះមិនពេញលេញឡើយ។'
+            ],403);
+        }
+        $user->officer->people;
+        $user->officer->organization;
+        $user->officer->position;
+        $user->officer->countesy;
+        $user->officer->job = $user->officer->getCurrentJob();
+
+        if( $user->officer->job == null ) {
+            return response()->json([
+                'ok' => false ,
+                'message' => 'គណនីនេះមិនមានតួនាទីក្នុងប្រព័ន្ធឡើយ។'
+            ],403);
+        }
+        $permissions = null ;
+        if( $user->officer->job != null && $user->officer->job->organizationStructurePosition != null ){
+            $user->officer->job->organizationStructurePosition->position;
+            $permissions = $user->officer->job->organizationStructurePosition->permissions;
+            if( $user->officer->job->organizationStructurePosition->organizationStructure != null ){
+                $user->officer->job->organizationStructurePosition->organizationStructure->organization;
+            }
+        }
+
+        if( !( $permissions instanceof Collection ) ){
+            return response()->json([
+                'ok' => false ,
+                'message' => 'គណនីនេះមិនមានសិទ្ធិក្នុងប្រព័ន្ធឡើយ។'
+            ],403);
+        }
+        else if( ( $permissions instanceof Collection ) && $permissions->isEmpty() ){
+            return response()->json([
+                'ok' => false ,
+                'message' => 'គណនីនេះមិនមានសិទ្ធិក្នុងប្រព័ន្ធឡើយ។'
+            ],403);
+        }
 
         return response()->json([
             'ok' => true ,
@@ -206,38 +245,41 @@ class AuthController extends Controller
             ],
             'record' => [
                 'id' => $user->id ,
-                'avatar_url' => $user->avatar_url ,
-                'email' => $user->email ,
                 'firstname' => $user->firstname ,
                 'lastname' => $user->lastname ,
                 'last_login' => $user->last_login ,
                 'last_logout' => $user->last_logout ,
-                'phone' => $user->phone ,
+                'avatar_url' => $user->avatar_url ,
                 'username' => $user->username ,
-                'last_login' => $user->last_login ,
+                'email' => $user->email ,
+                'phone' => $user->phone ,
+                'permissions' => $permissions->pluck('code' ) ,
+                // 'email' => $user->email ,
+                // 'phone' => $user->phone ,
+                // 'username' => $user->username ,
                 'roles' => $user->roles->map(function($role){
-                    return collect( $role->toArray() )->only([ 'id' , 'name' , 'guard_name' , 'tag' ] );
+                    return collect( $role->toArray() )->only([ 'id' , 'name' , 'guard_name' , 'tag' , 'sub_role' , 'enname' , 'khname' , 'sub_role_index' ] );
                 }) ,
                 'officer' => $user->officer != null 
-                    ? collect( $user->officer->toArray() )->only([ 'id' , 'code' , 'leader' , 'official_date' , 'passport' , 'email' , 'phone' , 'image' , 'countesy_id' , 'organization_id' , 'position_id' ])
+                    ? collect( $user->officer->toArray() )->only([ 'id' , 'code' , 'leader' , 'official_date' , 'passport' , 'email' , 'phone' , 'image' , 'job' ])
                     : null  ,
                 'people' => $user->officer != null 
                     ? (
                         $user->officer->people != null 
-                        ? collect( $user->officer->people->toArray() )->only([ 'id', 'firstname' , 'lastname' , 'enfirstname' ,'enlastname' , 'gender' , 'dob' ,'mobile_phone' , 'office_phone' , 'email', 'nid' , 'image' , 'marry_status' , 'father' , 'mother' , 'address' , 'pob' , 'passport' ]
+                        ? collect( $user->officer->people->toArray() )->only([ 'id', 'firstname' , 'lastname' , 'enfirstname' ,'enlastname' , 'gender' , 'dob' ,'mobile_phone' , 'office_phone' , 'email', 'nid' , 'image' , 'marry_status' , 'father' , 'mother' , 'address' ]
                         )
                         : null 
                     )
                     : null ,
-                'card' => $user->officer != null 
-                    ? (
-                        $user->officer->card != null 
-                        ? collect( $user->officer->card->toArray() )->only(
-                            [ 'id' , 'number' , 'uuid' , 'created_at' ]
-                        )
-                        : null 
-                    )
-                    : null ,
+                // 'card' => $user->officer != null 
+                //     ? (
+                //         $user->officer->card != null 
+                //         ? collect( $user->officer->card->toArray() )->only(
+                //             [ 'id' , 'number' , 'uuid' , 'created_at' ]
+                //         )
+                //         : null 
+                //     )
+                //     : null ,
                 'countesy' => $user->officer != null 
                     ? (
                         $user->officer->countesy != null 
@@ -316,12 +358,41 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'id' => $request->user()->id ,
+            'public_key' => $request->user()->public_key ,
+            'firstname' => $request->user()->firstname ,
+            'lastname' => $request->user()->lastname ,
+            'phone' => $request->user()->phone ,
+            'email' => $request->user()->email ,
+            'login_count' => $request->user()->login_count ,
+            'avatar_url' => \Storage::disk('public')->exists( $request->user()->avatar_url ) ? \Storage::disk('public')->url( $request->user()->avatar_url ) : null ,
+            'last_login' => $request->user()->last_login ,
+            'last_logout' => $request->user()->last_logout ,
+            'ip' => $request->user()->id
+        ]);
     }
 
-    public function signupActivate(Request $request)
+    /**
+     * Get the authenticated User
+     *
+     * @return [json] user object
+     */
+    public function confirmAuthentication(Request $request)
     {
-        $user = User::where('activation_token', $request->token)->first();
+        return response()->json([
+            'confirm' => $request->user() != null 
+                ? [
+                    'public_key' => $request->user()->public_key ,
+                    'firstname' => $request->user()->firstname ,
+                    'lastname' => $request->user()->lastname
+                ] : false 
+        ]);
+    }
+
+    public function signupActivate($token)
+    {
+        $user = User::where('activation_token', $token)->first();
         if (!$user) {
             return response()->json([
                 'message' => 'កូតបញ្ជាក់គណនីនេះមិនត្រឹមត្រូវឡើយ !'
@@ -337,6 +408,5 @@ class AuthController extends Controller
                 'record' => $user
             ],200);
     }
-
 
 }
