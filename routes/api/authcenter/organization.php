@@ -1,6 +1,7 @@
 <?php 
 use App\Http\Controllers\Api\AuthenticationCenter\Organization\OrganizationController;
 use App\Http\Controllers\Api\AuthenticationCenter\Organization\OrganizationStructurePositionController;
+use App\Http\Controllers\Api\AuthenticationCenter\Officer\OfficerJobController;
 /** ORGANIZATION SECTION */
 Route::group([
   'prefix' => 'organizations' ,

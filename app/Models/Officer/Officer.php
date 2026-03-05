@@ -22,10 +22,10 @@ class Officer extends Model
     public function rank(){
         return $this->belongsTo( \App\Models\Officer\Rank::class , 'rank_id' , 'id' );
     }
-    public function position(){
-        return $this->belongsTo( \App\Models\Position\Position::class , 'position_id' , 'id' );
+    public function position(){  //in progess
+        return $this->belongsTo( \App\Models\Organization\OrganizationStructurePosition::class , 'position_id' , 'id' );
     }
-    public function organization(){
+    public function organization(){ //in progess
         return $this->belongsTo( \App\Models\Organization\Organization::class , 'organization_id' , 'id' );
     }
     public function countesy(){
