@@ -44,11 +44,11 @@ Route::group([
     /**
      * Officer Job 
      */
-    Route::get('/', [OfficerJobController::class, 'index']);
-    Route::post('/', [OfficerJobController::class, 'addOfficeJob']);
-    Route::get('{id}/read', [OfficerJobController::class, 'read']);
-    Route::put('updateOfficerJob', [OfficerJobController::class, 'updateOfficerJob']);
-    Route::delete('destroyOfficerJob', [OfficerJobController::class, 'destroyOfficerJob']);
+    Route::get('job', [OfficerJobController::class, 'index']);
+    Route::post('job/add', [OfficerJobController::class, 'addOfficeJob']);
+    Route::get('job/{id}/read', [OfficerJobController::class, 'read']);
+    Route::put('job/update', [OfficerJobController::class, 'updateOfficerJob']);
+    Route::delete('job/{id}/destroy', [OfficerJobController::class, 'destroyOfficerJob']);
     // Route::get('/users/{id}', [OfficerJobController::class, 'show']);
 
 });
