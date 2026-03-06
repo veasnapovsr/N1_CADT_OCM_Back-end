@@ -51,6 +51,12 @@ Route::group([
     Route::delete('job/{id}/destroy', [OfficerJobController::class, 'destroyOfficerJob']);
     // Route::get('/users/{id}', [OfficerJobController::class, 'show']);
 
+  Route::group([
+    'prefix' => 'reports' ,
+    'middleware' => 'auth:api'
+  ], function () { 
+  
+  });
 });
 Route::group([
   'prefix' => 'officers' ,

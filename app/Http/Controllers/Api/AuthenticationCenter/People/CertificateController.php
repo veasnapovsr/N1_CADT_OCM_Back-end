@@ -143,7 +143,7 @@ class CertificateController extends Controller
 
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
-            'group' => [ 'id' , 'name' , 'desp' ]
+            'group' => [ 'id' , 'name' , 'desp' , 'education_level_name' , 'education_level' , 'general_knowledge' ]
         ]);
 
         $builder = $crud->getListBuilder();
