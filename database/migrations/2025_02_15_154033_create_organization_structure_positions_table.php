@@ -26,6 +26,7 @@ return new class extends Migration
             $table->text('job_desp')->nullable(true);
             $table->integer('total_jobs')->nullable(true)->default(0)->comment('Total officers within this position base on the officer_jobs table');
             $table->text('desp')->nullable(true);
+            $table->integer('index')->default(0)->nullable(true);
             $table->integer('created_by')->nullable(true);
             $table->integer('updated_by')->nullable(true);
             $table->integer('deleted_by')->nullable(true);

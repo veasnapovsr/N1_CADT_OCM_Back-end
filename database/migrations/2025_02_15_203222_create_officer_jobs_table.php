@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('unofficial_position_id')->nullable(true)->default(0);
             $table->integer('officer_id')->nullable(false);
             $table->integer('countesy_id')->nullable(false);
+            $table->string('email',191)->nullable(true);
             $table->string('start',50)->nullable(false);
             $table->string('end',50)->nullable(true);
             $table->integer('created_by')->nullable(true);

@@ -30,6 +30,8 @@ Route::group([
      * Update a reccord with id
      */
     Route::put('update',[OfficerController::class,'update']);
+    Route::put('updateprofile',[OfficerController::class,'updateOfficerProfile']);
+    
     /**
      * Delete a record
      */
@@ -52,10 +54,10 @@ Route::group([
     // Route::get('/users/{id}', [OfficerJobController::class, 'show']);
 
   Route::group([
-    'prefix' => 'reports' ,
+    'prefix' => 'reports',
     'middleware' => 'auth:api'
-  ], function () { 
-  
+  ], function () {
+    Route::get('officersunderorganization', [OfficerController::class, 'officersOfGeneralDepartment']);
   });
 });
 Route::group([
