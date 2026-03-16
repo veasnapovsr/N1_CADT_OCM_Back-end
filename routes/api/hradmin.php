@@ -246,6 +246,7 @@ Route::group([
     require('hradmin/organization.php');
     require('hradmin/countesy.php');
     require('hradmin/officer.php');
+    require('hradmin/officerrank.php');
     require( 'hradmin/certificate.php' );
     require( 'hradmin/birthcertificate.php' );
     require( 'hradmin/weddingcertificate.php' );

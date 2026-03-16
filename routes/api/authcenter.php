@@ -157,6 +157,7 @@ Route::group([
     require( 'authcenter/passport.php');
     require( 'authcenter/spokenlanguage.php');
     require( 'authcenter/officerjobbackground.php');
+    require( 'authcenter/officerrank.php');
     require( 'authcenter/officerrankbyworking.php');
     require( 'authcenter/officerrankbycertificate.php');
     require( 'authcenter/rank.php');

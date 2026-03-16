@@ -46,7 +46,7 @@ Route::group([
     /**
      * Officer Job 
      */
-    Route::get('job', [OfficerJobController::class, 'index']);
+    // Route::get('job', [OfficerJobController::class, 'index']);
     Route::post('job/add', [OfficerJobController::class, 'addOfficeJob']);
     Route::get('job/{id}/read', [OfficerJobController::class, 'read']);
     Route::put('job/update', [OfficerJobController::class, 'updateOfficerJob']);
