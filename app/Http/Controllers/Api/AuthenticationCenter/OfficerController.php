@@ -1651,16 +1651,6 @@ class OfficerController extends Controller
             $certificates['middle'] = $record->people->certificatesPostGraduated();
             $certificates['others'] = $record->people->certificatesOthers();
             $record->people->certificates = $certificates ;
-<<<<<<< HEAD
-            $record->people->birthCertificates;
-            $record->people->languages;
-            $record->jobBackgrounds;
-            $record->ranking_by_certificates = $record->rankingByCertificates->map(function($rank){
-                $rank->rank;
-                $rank->previousRank;
-                return $rank;
-            });
-=======
             $record->people->languages;
             $record->jobBackgrounds;
             $record->officer_ranks = $record->officerRanks->map(function($officerRank){
@@ -1674,7 +1664,6 @@ class OfficerController extends Controller
                 $rank->previousRank;
                 return $rank;
             });
->>>>>>> f67b449 (change file view name)
             $record->ranking_by_workings = $record->rankingByWorkings->map(function($rank){
                 $rank->rank;
                 $rank->previousRank;
