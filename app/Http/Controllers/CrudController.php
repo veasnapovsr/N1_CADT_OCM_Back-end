@@ -144,7 +144,7 @@ class CrudController extends Controller {
                     if( isset( $this->request->where['like'] ) && !empty( $this->request->where['like'] ) ){
                         foreach ($this->request->where['like'] as $index => $condition ) {
                             if( isset( $condition['value'] ) && $condition['value'] !== "" ){
-                                $query = $query->where($condition['field'], "LIKE" , "%".$condition['value']."%");
+                                $query = $query->where($condition['field'], "ILIKE" , "%".$condition['value']."%");
                             }
                         }
                     }
@@ -241,13 +241,13 @@ class CrudController extends Controller {
                             $fieldIndex > 0
                                 ? $query->orWhere(function($query) use ($field, $searchWords) {
                                         foreach( $searchWords AS $wordIndex => $word ){
-                                            // strlen($word) ? $query->where($field, 'LIKE', "%" . $word . "%") : false ;
-                                            strlen($word) ? $query->orWhere($field, 'LIKE', "%" . $word . "%") : false ;
+                                            // strlen($word) ? $query->where($field, 'ILIKE', "%" . $word . "%") : false ;
+                                            strlen($word) ? $query->orWhere($field, 'ILIKE', "%" . $word . "%") : false ;
                                         }
                                     })
                                 : $query->where(function($query) use ($field, $searchWords) {
                                     foreach( $searchWords AS $wordIndex => $word ){
-                                        strlen($word) ? $query->where($field, 'LIKE', "%" . $word . "%") : false ;
+                                        strlen($word) ? $query->where($field, 'ILIKE', "%" . $word . "%") : false ;
                                     }
                                 });
                         } 
@@ -270,8 +270,8 @@ class CrudController extends Controller {
                                     foreach ($terms as $index => $term) {
                                         foreach( $pivot['where']['like']['fields'] AS $fieldIndex => $fieldName ){
                                             $index == 0 && $fieldIndex == 0
-                                                ? $pivotQuery->where( $fieldName , 'LIKE', "%" . $term . "%")
-                                                : $pivotQuery->orWhere( $fieldName , 'LIKE', "%" . $term . "%");
+                                                ? $pivotQuery->where( $fieldName , 'ILIKE', "%" . $term . "%")
+                                                : $pivotQuery->orWhere( $fieldName , 'ILIKE', "%" . $term . "%");
                                         }
                                     }
                                 });
