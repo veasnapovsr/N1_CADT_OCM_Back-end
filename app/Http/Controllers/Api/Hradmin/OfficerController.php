@@ -1481,6 +1481,12 @@ class OfficerController extends Controller
             $record->people->certificates = $certificates ;
             $record->people->languages;
             $record->jobBackgrounds;
+            $record->officer_ranks = $record->officerRanks->map(function($officerRank){
+                $officerRank->rank;
+                $officerRank->countesy;
+                return $officerRank;
+            });
+            $record->krob_khans = $record->officer_ranks;
             $record->ranking_by_certificates = $record->rankingByCertificates->map(function($rank){
                 $rank->rank;
                 $rank->previousRank;

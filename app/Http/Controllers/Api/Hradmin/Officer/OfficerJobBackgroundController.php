@@ -241,7 +241,16 @@ class OfficerJobBackgroundController extends Controller
             $kbFilesize = round( filesize( $_FILES['file']['tmp_name'] ) / 1024 , 4 );
             $mbFilesize = round( $kbFilesize / 1024 , 4 );
             if( ( $certificate = RecordModel::find($request->id) ) !== null ){
-                $uniqeName = Storage::disk('certificate')->putFile( '' , new File( $_FILES['file']['tmp_name'] ) );
+                $originalName = basename( str_replace( '\\' , '/' , strval( $_FILES['file']['name'] ?? 'document' ) ) );
+                $safeOriginalName = trim( preg_replace( '/[^\\pL\\pN\\s._-]+/u' , '_' , $originalName ) );
+                if( $safeOriginalName === '' ){
+                    $safeOriginalName = 'document';
+                }
+                $uniqeName = Storage::disk('certificate')->putFileAs(
+                    '' ,
+                    new File( $_FILES['file']['tmp_name'] ) ,
+                    str_replace( '.' , '' , uniqid( '', true ) ) . '__' . $safeOriginalName
+                );
                 $certificate->pdf = $uniqeName ;
                 $certificate->save();
                 if( Storage::disk('certificate')->exists( $certificate->pdf ) ){

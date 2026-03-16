@@ -239,7 +239,16 @@ class OfficerRankByCertificateController extends Controller
             $kbFilesize = round( filesize( $_FILES['file']['tmp_name'] ) / 1024 , 4 );
             $mbFilesize = round( $kbFilesize / 1024 , 4 );
             if( ( $certificate = RecordModel::find($request->id) ) !== null ){
-                $uniqeName = Storage::disk('certificate')->putFile( '' , new File( $_FILES['file']['tmp_name'] ) );
+                $originalName = basename( str_replace( '\\' , '/' , strval( $_FILES['file']['name'] ?? 'document' ) ) );
+                $safeOriginalName = trim( preg_replace( '/[^\\pL\\pN\\s._-]+/u' , '_' , $originalName ) );
+                if( $safeOriginalName === '' ){
+                    $safeOriginalName = 'document';
+                }
+                $uniqeName = Storage::disk('certificate')->putFileAs(
+                    '' ,
+                    new File( $_FILES['file']['tmp_name'] ) ,
+                    str_replace( '.' , '' , uniqid( '', true ) ) . '__' . $safeOriginalName
+                );
                 $certificate->pdf = $uniqeName ;
                 $certificate->save();
                 if( Storage::disk('certificate')->exists( $certificate->pdf ) ){
@@ -308,7 +317,8 @@ class OfficerRankByCertificateController extends Controller
             /**
              * Save information of the regulator and its related information
              */
-            if( $record->update([
+            $clearPdf = intval( $request->clear_pdf ?? 0 ) > 0 ;
+            $updateData = [
                 'officer_id' => $officer->id ,
                 'organization' => $request->organization?? '' ,
                 'location' => $request->location?? '' ,
@@ -318,7 +328,11 @@ class OfficerRankByCertificateController extends Controller
                 'certificate' => $request->certificate?? '' ,
                 'updated_by' => \Auth::user()->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d')
-            ]) ){
+            ];
+            if( $clearPdf ){
+                $updateData['pdf'] = '' ;
+            }
+            if( $record->update( $updateData ) ){
                 $record->with('officer');
                 $responseData['message'] = __("crud.read.success");
                 $responseData['ok'] = true ;
