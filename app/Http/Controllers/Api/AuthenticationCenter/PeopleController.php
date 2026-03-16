@@ -420,7 +420,10 @@ class PeopleController extends Controller
                 'emergency_lastname','emergency_firstname','emergency_gender','emergency_relationship','emergency_profession','emergency_phone','emergency_email','emergency_address'
                 ];
             foreach( $stringFields as $field ){
-                if( isset( $request->$field ) && strlen( $request->$field ) > 0 ){
+                if( isset( $request->$field ) && $field == 'body_condition_desp' ){
+                    $person->$field = $request->body_condition == 0 ? '' : $request->$field;
+                }
+                else if( isset( $request->$field ) && strlen( $request->$field ) > 0 ){
                     $person->$field = $request->$field;
                 }
             }

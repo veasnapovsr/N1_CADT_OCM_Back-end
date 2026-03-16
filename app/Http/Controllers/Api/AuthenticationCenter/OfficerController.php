@@ -128,7 +128,9 @@ class OfficerController extends Controller
                     "relationship" => 'people',
                     "where" => [
                         "like" => [
-                            "fields" => [ 'firstname' , 'lastname' , 'enfirstname' , 'enlastname' , 'dob' , 'mobile_phone' , 'office_phone' , 'email' , 'nid' , 'passport' , 'address' ] ,
+                            "fields" => [ 'firstname' , 'lastname' , 'enfirstname' , 'enlastname' 
+                                // , 'dob' , 'mobile_phone' , 'office_phone' , 'email' , 'nid' , 'passport' , 'address' 
+                                ] ,
                             "value" => $search
                         ]
                     ]
