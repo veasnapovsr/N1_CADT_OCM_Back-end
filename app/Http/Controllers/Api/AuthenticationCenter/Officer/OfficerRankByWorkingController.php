@@ -301,7 +301,7 @@ class OfficerRankByWorkingController extends Controller
             'date' => $request->date?? '' ,
             'rank_id' => intval( $request->rank_id?? 0 ) ,
             'previous_rank_id' => intval( $request->previous_rank_id?? 0 ),
-            'changing_type' => intval( $request->changing_type?? 0 ) ,
+            'changing_type' => strval( $request->changing_type?? '' ) ,
             'pdf' => '' ,
             'created_by' => \Auth::user()->id ,
             'updated_by' => \Auth::user()->id ,
@@ -335,7 +335,7 @@ class OfficerRankByWorkingController extends Controller
                 'date' => $request->date?? '' ,
                 'rank_id' => intval( $request->rank_id?? 0 ) ,
                 'previous_rank_id' => intval( $request->previous_rank_id?? 0 ),
-                'changing_type' => intval( $request->changing_type?? 0 ) ,
+                'changing_type' => strval( $request->changing_type?? '' ) ,
                 'updated_by' => \Auth::user()->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d')
             ];
