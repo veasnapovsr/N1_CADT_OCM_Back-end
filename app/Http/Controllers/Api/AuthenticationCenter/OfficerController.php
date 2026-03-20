@@ -45,10 +45,19 @@ class OfficerController extends Controller
         $perPage = isset( $request->perPage ) && intval( $request->perPage ) > 0 ? $request->perPage : 10 ;
         $page = isset( $request->page ) && intval( $request->page ) > 0 ? $request->page : 1 ;
         
+        $isWildSearch = isset( $request->wild_search ) && intval( $request->wild_search ) > 0 ? intval( $request->wild_search ) : 0 ;
+
         $positions = isset( $request->positions ) ? explode(',',$request->positions) : false ;
         if( is_array( $positions ) && !empty( $positions ) ){
             $positions = array_filter( $positions, function($position){
                 return intval( $position ) > 0 ;
+            } );
+        }
+
+        $unofficialPositions = isset( $request->unofficial_position_ids ) ? explode(',',$request->unofficial_position_ids) : false ;
+        if( is_array( $unofficialPositions ) && !empty( $unofficialPositions ) ){
+            $unofficialPositions = array_filter( $unofficialPositions, function($unofficialPosition){
+                return intval( $unofficialPosition ) > 0 ;
             } );
         }
 
@@ -66,6 +75,31 @@ class OfficerController extends Controller
             } );
         }
 
+        $educationLevels = isset( $request->education_levels ) ? explode(',',$request->education_levels) : false ;
+        if( is_array( $educationLevels ) && !empty( $educationLevels ) ){
+            $educationLevels = array_filter( $educationLevels , function($educationLevel){
+                return intval( $educationLevel ) > 0 ;
+            } );
+        }
+
+        $ranks = isset( $request->rank_ids ) ? explode(',',$request->rank_ids) : false ;
+        if( is_array( $ranks ) && !empty( $ranks ) ){
+            $ranks = array_filter( $ranks , function($rank){
+                return intval( $rank ) > 0 ;
+            } );
+        }
+
+        $searchFields = isset($request->search_fields) && strlen(trim($request->search_fields)) > 0 && !empty(explode($request->search_fields, ',')) ? explode($request->search_fields, ',') : [];
+        // Filter the searchFields base on pivot table's fields
+        $pivotDefaultSearchFields = ['firstname', 'lastname', 'enfirstname', 'enlastname', 'nid'];
+        $pivotSearchFields = array_filter( $searchFields ,function ($field) {
+            return in_array($field, [ 'firstname' , 'lastname' , 'enfirstname' , 'enlastname' , 'nid', 'dob' , 'mobile_phone' , 'office_phone' , 'email' , 'passport' , 'address' ] );
+        });
+        // Filter the searchFields to make sure it does exists within the table
+        $searchFields = array_filter( $searchFields , function ($field) {
+            return in_array($field, $this->selectFields);
+        });
+
         // return response()->json([
         //     'positions' => $positions ,
         //     'organizations' => $organizations ,
@@ -81,6 +115,7 @@ class OfficerController extends Controller
             //         ]
             //     ],
                 'in' => [
+                    // Filer by officer ids
                     is_array( $officerIds ) && !empty( $officerIds )
                         ?   [
                             'field' => 'id' ,
@@ -123,32 +158,42 @@ class OfficerController extends Controller
                 //     ]
                 // ]
                 // : [] ,
-                strlen( $search ) > 0 ?
-                [
-                    "relationship" => 'people',
-                    "where" => [
-                        "like" => [
-                            "fields" => [ 'firstname' , 'lastname' , 'enfirstname' , 'enlastname' 
-                                // , 'dob' , 'mobile_phone' , 'office_phone' , 'email' , 'nid' , 'passport' , 'address' 
-                                ] ,
-                            "value" => $search
+                $isWildSearch > 0
+                    ? (
+                        strlen( $search ) > 0 ?
+                        [
+                            "relationship" => 'people',
+                            "where" => [
+                                "like" => [
+                                    "value" => $search ,
+                                    "fields" => !empty( $pivotSearchFields ) ? $pivotSearchFields : $pivotDefaultSearchFields
+                                ]
+                            ]
                         ]
-                    ]
-                ]
-                : []
+                        : []
+                    )
+                    :[]
+                
             ],
             "pagination" => [
                 'perPage' => $perPage,
                 'page' => $page
             ],
-            "search" => $search === false ? [] : [
-                'value' => $search ,
-                'fields' => [
-                    'code' ,
-                    'official_date' ,
-                    'unofficial_date'
-                ]
-            ],
+            "search" => $isWildSearch > 0 
+                ? (
+                    $search === false 
+                        ? [] 
+                        : [
+                            'value' => $search ,
+                            'fields' => !empty( $searchFields ) ? $searchFields : [
+                                'code' ,
+                                'official_date' ,
+                                'unofficial_date'
+                            ]
+                        ]
+                )
+                : []
+            ,
             "order" => [
                 'field' => 'id' ,
                 'by' => 'desc'
@@ -181,6 +226,7 @@ class OfficerController extends Controller
                         $job->organizationStructurePosition->organizationStructure->organization;
                     }
                 }
+                $job->unofficialPosition;
                 return $officer == null || $job == null ? null : $job ;
             }
         ]);
@@ -334,6 +380,7 @@ class OfficerController extends Controller
             // 'organization' => [ 'id' , 'name' , 'desp' , 'prefix' ] ,
             'countesy' => [ 'id' , 'name' , 'desp' , 'prefix' ] ,
             'jobs' => [ 'id' , 'organization_structure_position_id' , 'officer_id' ,'countesy_id' , 'start' , 'end' ,
+                'unoficialPosition' => [ 'id' , 'name' , 'desp' , 'prefix'] ,
                 'organizationStructurePosition' => [
                     'id' , 'name' , 'pid' , 'tpid' , 'cids' , 'image' , 'organization_structure_id' , 'position_id' , 'job_desp' ,
                     'position' => [ 'id' , 'name' , 'desp' , 'prefix' ] ,
@@ -361,18 +408,46 @@ class OfficerController extends Controller
         // $builder->doesntHave('jobs');
         // $builder->whereHas('jobs');
 
-        
-        $builder->whereHas('jobs',function($jobQuery) use( $organizations , $positions ) {
-            $jobQuery->whereHas('organizationStructurePosition',function($positionQuery)  use( $organizations , $positions ){
-                if( is_array( $positions ) && !empty( $positions ) ){
-                    $positionQuery->whereIn('position_id', $positions );
+        if( $isWildSearch == 0 && $search != null && trim($search) != '' && strlen( $search ) > 0 ){
+            // search for the specific columns
+            $builder->whereHas('people', function ($q) use ($search) {
+                $q->where('namekh', $search)
+                    ->orWhere('namekhreverse', $search)
+                    ->orWhere('nameen', $search)
+                    ->orWhere('nameenreverse', $search);
+            });
+        }
+
+        if( !empty( $educationLevels ) ){
+            $builder->whereHas('people', function ($q) use ( $educationLevels ){
+                $q->whereHas('certificates', function ($q) use ( $educationLevels ){
+                    $q->whereIn('certificate_group_id', $educationLevels); 
+                });
+            });
+        }
+
+        if( !empty( $ranks ) ){
+            $builder->whereHas('rank', function ($q) use ( $ranks ){
+                $q->whereIn('id', $ranks );
+            });
+        }
+
+        $builder->whereHas('jobs', function ($jobQuery) use ($organizations, $positions, $unofficialPositions) {
+            $jobQuery->whereHas('organizationStructurePosition', function ($positionQuery) use ($organizations, $positions) {
+                if (is_array($positions) && !empty($positions)) {
+                    $positionQuery->whereIn('position_id', $positions);
                 }
-                if( is_array( $organizations ) && !empty( $organizations ) ){
-                    $positionQuery->whereHas('organizationStructure',function($query) use($organizations){
-                        $query->whereIn('organization_id',$organizations);
+                if (is_array($organizations) && !empty($organizations)) {
+                    $positionQuery->whereHas('organizationStructure', function ($query) use ($organizations) {
+                        $query->whereIn('organization_id', $organizations);
                     });
                 }
             });
+            if (!empty($unofficialPositions)) {
+                $jobQuery->whereHas('unofficialPosition', function ($q) use ($unofficialPositions) {
+                    $q->whereIn('unofficial_position_id', $unofficialPositions);
+                });
+            }
         });
 
         /**
@@ -578,6 +653,12 @@ class OfficerController extends Controller
                     $request->mobile_phone .
                     $request->office_phone
                 ) ,
+                
+                'namekh' => $request->lastname.$request->firstname ,
+                'namekhreverse' => $request->firstname.$request->lastname ,
+                'nameen' => $request->enlastname.$request->enfirstname ,
+                'nameenreverse' => $request->enfirstname.$request->enlastname ,
+
                 'firstname' => $request->firstname , 
                 'lastname' => $request->lastname , 
                 'enfirstname' => $request->enfirstname , 
@@ -818,6 +899,12 @@ class OfficerController extends Controller
                 $request->mobile_phone .
                 $request->office_phone
             ) ,
+
+            'namekh' => $request->lastname.$request->firstname ,
+            'namekhreverse' => $request->firstname.$request->lastname ,
+            'nameen' => $request->enlastname.$request->enfirstname ,
+            'nameenreverse' => $request->enfirstname.$request->enlastname ,
+
             'firstname' => $request->firstname , 
             'lastname' => $request->lastname , 
             'enfirstname' => $request->enfirstname , 
@@ -999,6 +1086,23 @@ class OfficerController extends Controller
                 'thnak' => $thnak
             ])->first();
         }
+        // return response()->json( [
+        //         'code' => $request->code ,
+        //         // 'organization_id' => $organization != null && intval( $organization->id ) > 0 ? $organization->id : null ,
+        //         // 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
+        //         // 'rank_id' => $rank_object == null ? $officer->rank_id : $rank_object->id ,
+        //         'rank_id' => $rank_object == null ? null : $rank_object->id ,
+        //         'countesy_id' => intval( $request->countesy_id ) , 
+        //         'passport' => $request->passport ,
+        //         'email' => $request->email ,
+        //         'phone' => $request->phone ,
+        //         'unofficial_date' => strlen( $request->unofficial_date ) > 0 ? \Carbon\Carbon::parse( $request->unofficial_date )->format('Y-m-d') : '' ,
+        //         'official_date' => strlen( $request->official_date ) > 0 ? \Carbon\Carbon::parse( $request->official_date )->format('Y-m-d') : '' ,
+        //         'salary_rank' => $request->salary_rank?? ( $rank_object != null ? $rank_object->prefix : '' ) ,
+        //         'officer_type' => $request->officer_type?? '' ,
+        //         'additional_officer_type' => $request->additional_officer_type?? '' ,
+        //         'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
+        //     ] );
         $user = \Auth::user() == null ? null : \Auth::user() ;
         $officer = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
         if( $request->people != null ){
@@ -1085,8 +1189,7 @@ class OfficerController extends Controller
             ]);
         }
 
-        $whereCondition = $organization != null && $organization->id > 0
-            ? [
+        $whereCondition = [
                 'code' => $request->code ,
                 // 'organization_id' => $organization != null && intval( $organization->id ) > 0 ? $organization->id : null ,
                 // 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
@@ -1098,19 +1201,12 @@ class OfficerController extends Controller
                 'phone' => $request->phone ,
                 'unofficial_date' => strlen( $request->unofficial_date ) > 0 ? \Carbon\Carbon::parse( $request->unofficial_date )->format('Y-m-d') : '' ,
                 'official_date' => strlen( $request->official_date ) > 0 ? \Carbon\Carbon::parse( $request->official_date )->format('Y-m-d') : '' ,
-                'salary_rank' => $request->salary_rank?? 'ក.៣.៤' ,
+                'salary_rank' => $request->salary_rank?? ( $rank_object != null ? $rank_object->prefix : '' ) ,
                 'officer_type' => $request->officer_type?? '' ,
                 'additional_officer_type' => $request->additional_officer_type?? '' ,
                 'updated_by' => $user == null ? 0 : $user->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-            ] : [
-                'code' => $request->code ,
-                // 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
-                'countesy_id' => intval( $request->countesy_id ) , 
-                'passport' => $request->passport ,
-                'email' => $request->email ,
-                'phone' => $request->phone
-            ] ;
+            ];
         $officer->update( $whereCondition );
 
         $currentJob = $officer->getCurrentJob();
@@ -1652,6 +1748,7 @@ class OfficerController extends Controller
             $certificates['first'] = $record->people->certificatesHighSchool();
             $certificates['middle'] = $record->people->certificatesPostGraduated();
             $certificates['others'] = $record->people->certificatesOthers();
+            $record->people->birthCertificates;
             $record->people->certificates = $certificates ;
             $record->people->languages;
             $record->jobBackgrounds;
@@ -1756,14 +1853,21 @@ class OfficerController extends Controller
             ],500);
         }
 
-
+        $totalOfficersWithInPosition = [];
+        $totalOfficers = 0;
         $organizationsList = collect();
         $organizationStructure->organization;
         if( $organizationStructure->structurePositions()->count() ){
-            $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition) {
-                $organizationStructurePosition->position;
+            $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition ) use( &$totalOfficersWithInPosition , &$totalOfficers ) {
+                if( isset( $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] ) ){
+                    $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] += $organizationStructurePosition->officerJobs()->count() ;
+                }else{
+                    $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] = $organizationStructurePosition->officerJobs()->count() ;
+                }
+                $totalOfficers += $organizationStructurePosition->officerJobs()->count();
                 if( $organizationStructurePosition->officerJobs()->count() ){
                     $organizationStructurePosition->officer_jobs = $organizationStructurePosition->officerJobs()->get()->map(function ($officerJob) {
+                        $officerJob->unofficialPosition;
                         if ($officerJob->officer) {
                             $officerJob->officer->current_job = $officerJob->officer->getCurrentJob();
                             if( $officerJob->officer->current_job != null ){
@@ -1786,14 +1890,21 @@ class OfficerController extends Controller
         $childIds = array_filter( explode(',', $organizationStructure->cids) , function($childId){
             return intval( $childId ) > 0;
         });
+        
         if (is_array($childIds) && !empty($childIds)) {
-            \App\Models\Organization\OrganizationStructure::whereIn('id', $childIds )->get()->map(function ($organizationStructure) use( $organizationsList ){
+            \App\Models\Organization\OrganizationStructure::whereIn('id', $childIds )->get()->map(function ($organizationStructure) use( $organizationsList , &$totalOfficersWithInPosition  , &$totalOfficers ){
                 $organizationStructure->organization;
                 if( $organizationStructure->structurePositions()->count() ){
-                    $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition) {
-                        $organizationStructurePosition->position;
+                    $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition  ) use( &$totalOfficersWithInPosition  , &$totalOfficers) {
+                        if( isset( $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] ) ){
+                            $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] += $organizationStructurePosition->officerJobs()->count() ;
+                        }else{
+                            $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] = $organizationStructurePosition->officerJobs()->count() ;
+                        }
+                        $totalOfficers += $organizationStructurePosition->officerJobs()->count();
                         if( $organizationStructurePosition->officerJobs()->count() ){
                             $organizationStructurePosition->officer_jobs = $organizationStructurePosition->officerJobs()->get()->map(function ($officerJob) {
+                                $officerJob->unofficialPosition;
                                 if ($officerJob->officer) {
                                     $officerJob->officer->current_job = $officerJob->officer->getCurrentJob();
                                     if( $officerJob->officer->current_job != null ){
@@ -1817,13 +1928,19 @@ class OfficerController extends Controller
                     return intval( $childId ) > 0;
                 });
                 if (is_array($childIds) && !empty($childIds)) {
-                    $organizationStructure->cids = \App\Models\Organization\OrganizationStructure::whereIn('id', $childIds)->get()->map(function ($organizationStructure) use( $organizationsList ) {
+                    $organizationStructure->cids = \App\Models\Organization\OrganizationStructure::whereIn('id', $childIds)->get()->map(function ($organizationStructure) use( $organizationsList , &$totalOfficersWithInPosition  , &$totalOfficers) {
                         $organizationStructure->organization;
                         if( $organizationStructure->structurePositions()->count() ){
-                            $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition) {
-                                $organizationStructurePosition->position;
+                            $organizationStructure->structure_positions = $organizationStructure->structurePositions()->whereHas('officerJobs')->orderby('index','asc')->get()->map(function ($organizationStructurePosition ) use( &$totalOfficersWithInPosition , &$totalOfficers ) {
+                                if( isset( $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] ) ){
+                                    $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] += $organizationStructurePosition->officerJobs()->count() ;
+                                }else{
+                                    $totalOfficersWithInPosition[ $organizationStructurePosition->position->name ] = $organizationStructurePosition->officerJobs()->count() ;
+                                }
+                                $totalOfficers += $organizationStructurePosition->officerJobs()->count();
                                 if( $organizationStructurePosition->officerJobs()->count() ){
                                     $organizationStructurePosition->officer_jobs = $organizationStructurePosition->officerJobs()->get()->map(function ($officerJob) {
+                                        $officerJob->unofficialPosition;
                                         if ($officerJob->officer) {
                                             $officerJob->officer->current_job = $officerJob->officer->getCurrentJob();
                                             if( $officerJob->officer->current_job != null ){
@@ -1850,7 +1967,10 @@ class OfficerController extends Controller
         
         return response()->json([
             'positions' => $positions ,
+            'totalOfficersWithInPosition' => $totalOfficersWithInPosition ,
+            'totalOfficers' => $totalOfficers ,
             'organization' => $organizationStructure ,
+            'organizations' => \App\Models\Organization\OrganizationStructure::where('tpid','like', $organizationStructure->tpid . '%' )->orderby('tpid')->get() ,
             'record' => $organizationsList
         ],200);
     }

@@ -373,7 +373,8 @@ class CertificateController extends Controller
     public function groups(){
         return response()->json([
             'ok' => true ,
-            'records' => \App\Models\People\CertificateGroup::all()->groupby('education_level_name') ,
+            'grouped_by_records' => \App\Models\People\CertificateGroup::all()->groupby('education_level_name') ,
+            'records' => \App\Models\People\CertificateGroup::all() ,
             'message' => ' រួចរាល់'
         ],200);
     }
