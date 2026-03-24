@@ -31,6 +31,8 @@ Route::group([
      * Update a reccord with id
      */
     Route::put('update',[OfficerController::class,'update']);
+    Route::put('updateprofile',[OfficerController::class,'updateOfficerProfile']);
+    
     /**
      * Delete a record
      */
@@ -45,13 +47,19 @@ Route::group([
     /**
      * Officer Job 
      */
-    Route::get('job', [OfficerJobController::class, 'index']);
+    // Route::get('job', [OfficerJobController::class, 'index']);
     Route::post('job/add', [OfficerJobController::class, 'addOfficeJob']);
     Route::get('job/{id}/read', [OfficerJobController::class, 'read']);
     Route::put('job/update', [OfficerJobController::class, 'updateOfficerJob']);
     Route::delete('job/{id}/destroy', [OfficerJobController::class, 'destroyOfficerJob']);
     // Route::get('/users/{id}', [OfficerJobController::class, 'show']);
 
+  Route::group([
+    'prefix' => 'reports',
+    'middleware' => 'auth:api'
+  ], function () {
+    Route::get('officersunderorganization', [OfficerController::class, 'officersOfGeneralDepartment']);
+  });
 });
 Route::group([
   'prefix' => 'officers' ,

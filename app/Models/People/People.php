@@ -88,7 +88,7 @@ class People extends Model
     return $this->hasMany( \App\Models\People\Passport::class , 'people_id' , 'id' );
   }
   public function birthCertificates(){
-    return $this->hasMany( \App\Models\People\BirthCertificates::class , 'people_id' , 'id' );
+    return $this->hasMany( \App\Models\People\BirthCertificate::class , 'people_id' , 'id' );
   }
   public function weddingCertificates(){
     return $this->hasMany( \App\Models\People\WeddingCertificate::class , 'people_id' , 'id' );

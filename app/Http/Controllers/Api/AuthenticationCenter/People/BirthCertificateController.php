@@ -460,8 +460,7 @@ class BirthCertificateController extends Controller
         if($certificate) {
             $pathPdf = storage_path('data') . '/certificates/' . $certificate->pdf ;
             $ext = pathinfo($pathPdf);
-            $filename = $certificate->id . '-' .$certificate->field_name . "." . $ext['extension'];
-        
+            $filename = $certificate->id . '-' .$certificate->field_name . "." . ( isset( $ext['extension'] ) && strlen( trim($ext['extension']) ) > 0 ? $ext['extension'] : 'pdf' );        
             /**   Log the access of the user */
             // $user = \Auth::user() != null ? \Auth::user() : auth('api')->user() ;
             // if( $user != null ){
@@ -478,7 +477,8 @@ class BirthCertificateController extends Controller
                     'serial' => $certificate->pdf ,
                     "pdf" => 'data:application/pdf;base64,' . $pdfBase64 ,
                     "filename" => $filename,
-                    "ok" => true 
+                    "ok" => true ,
+                    'path' => $pathPdf
                 ],200);
             }else
             {

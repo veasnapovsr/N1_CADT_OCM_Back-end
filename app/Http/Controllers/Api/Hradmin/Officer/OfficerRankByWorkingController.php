@@ -247,7 +247,16 @@ class OfficerRankByWorkingController extends Controller
             $kbFilesize = round( filesize( $_FILES['file']['tmp_name'] ) / 1024 , 4 );
             $mbFilesize = round( $kbFilesize / 1024 , 4 );
             if( ( $certificate = RecordModel::find($request->id) ) !== null ){
-                $uniqeName = Storage::disk('certificate')->putFile( '' , new File( $_FILES['file']['tmp_name'] ) );
+                $originalName = basename( str_replace( '\\' , '/' , strval( $_FILES['file']['name'] ?? 'document' ) ) );
+                $safeOriginalName = trim( preg_replace( '/[^\\pL\\pN\\s._-]+/u' , '_' , $originalName ) );
+                if( $safeOriginalName === '' ){
+                    $safeOriginalName = 'document';
+                }
+                $uniqeName = Storage::disk('certificate')->putFileAs(
+                    '' ,
+                    new File( $_FILES['file']['tmp_name'] ) ,
+                    str_replace( '.' , '' , uniqid( '', true ) ) . '__' . $safeOriginalName
+                );
                 $certificate->pdf = $uniqeName ;
                 $certificate->save();
                 if( Storage::disk('certificate')->exists( $certificate->pdf ) ){
@@ -292,7 +301,7 @@ class OfficerRankByWorkingController extends Controller
             'date' => $request->date?? '' ,
             'rank_id' => intval( $request->rank_id?? 0 ) ,
             'previous_rank_id' => intval( $request->previous_rank_id?? 0 ),
-            'changing_type' => intval( $request->changing_type?? 0 ) ,
+            'changing_type' => strval( $request->changing_type?? '' ) ,
             'pdf' => '' ,
             'created_by' => \Auth::user()->id ,
             'updated_by' => \Auth::user()->id ,
@@ -325,7 +334,7 @@ class OfficerRankByWorkingController extends Controller
                 'date' => $request->date?? '' ,
                 'rank_id' => intval( $request->rank_id?? 0 ) ,
                 'previous_rank_id' => intval( $request->previous_rank_id?? 0 ),
-                'changing_type' => intval( $request->changing_type?? 0 ) ,
+                'changing_type' => strval( $request->changing_type?? '' ) ,
                 'updated_by' => \Auth::user()->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d')
             ]) ){

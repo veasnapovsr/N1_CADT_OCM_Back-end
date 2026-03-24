@@ -143,7 +143,7 @@ class CertificateController extends Controller
 
         $crud->setRelationshipFunctions([
             /** relationship name => [ array of fields name to be selected ] */
-            'group' => [ 'id' , 'name' , 'desp' ]
+            'group' => [ 'id' , 'name' , 'desp' , 'education_level_name' , 'education_level' , 'general_knowledge' ]
         ]);
 
         $builder = $crud->getListBuilder();
@@ -373,7 +373,8 @@ class CertificateController extends Controller
     public function groups(){
         return response()->json([
             'ok' => true ,
-            'records' => \App\Models\People\CertificateGroup::all()->groupby('education_level_name') ,
+            'grouped_by_records' => \App\Models\People\CertificateGroup::all()->groupby('education_level_name') ,
+            'records' => \App\Models\People\CertificateGroup::all() ,
             'message' => ' រួចរាល់'
         ],200);
     }

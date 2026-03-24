@@ -13,6 +13,9 @@ class OfficerJob extends Model
 
     protected $guarded = ['id'];
 
+    public function unofficialPosition(){
+        return $this->belongsTo( \App\Models\Position\Position::class , 'unofficial_position_id' , 'id' );
+    }
     public function organizationStructurePosition(){
         return $this->belongsTo( \App\Models\Organization\OrganizationStructurePosition::class , 'organization_structure_position_id' , 'id' );
     }

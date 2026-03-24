@@ -34,6 +34,25 @@ class OfficerRankByCertificateController extends Controller
         'updated_by' , 
         'deleted_by' 
     ];
+
+    private function resolvePdfDisplayName($value)
+    {
+        $raw = is_string($value) ? trim($value) : '';
+        if ($raw === '') {
+            return '';
+        }
+
+        $normalized = explode('?', $raw)[0];
+        $parts = array_values(array_filter(explode('/', $normalized)));
+        $filename = count($parts) ? $parts[count($parts) - 1] : $raw;
+        $decoded = rawurldecode($filename);
+        $markerIndex = strpos($decoded, '__');
+        if ($markerIndex !== false && strlen($decoded) > ($markerIndex + 2)) {
+            return substr($decoded, $markerIndex + 2);
+        }
+
+        return $decoded;
+    }
     /**
      * Listing function
      */
@@ -137,7 +156,10 @@ class OfficerRankByCertificateController extends Controller
              * custom the value of the field
              */
             'pdf' => function($record){
-                $record->pdf = ( strlen( $record->pdf ) > 0 && \Storage::disk('certificate')->exists( $record->pdf ) )
+                $pdfSerial = is_string($record->pdf) ? trim($record->pdf) : '';
+                $record->pdf_serial = $pdfSerial;
+                $record->pdf_name = $this->resolvePdfDisplayName($pdfSerial);
+                $record->pdf = ( strlen( $pdfSerial ) > 0 && \Storage::disk('certificate')->exists( $pdfSerial ) )
                 ? true
                 // \Storage::disk('regulator')->url( $pdf ) 
                 : false ;
@@ -239,7 +261,16 @@ class OfficerRankByCertificateController extends Controller
             $kbFilesize = round( filesize( $_FILES['file']['tmp_name'] ) / 1024 , 4 );
             $mbFilesize = round( $kbFilesize / 1024 , 4 );
             if( ( $certificate = RecordModel::find($request->id) ) !== null ){
-                $uniqeName = Storage::disk('certificate')->putFile( '' , new File( $_FILES['file']['tmp_name'] ) );
+                $originalName = basename( str_replace( '\\' , '/' , strval( $_FILES['file']['name'] ?? 'document' ) ) );
+                $safeOriginalName = trim( preg_replace( '/[^\\pL\\pN\\s._-]+/u' , '_' , $originalName ) );
+                if( $safeOriginalName === '' ){
+                    $safeOriginalName = 'document';
+                }
+                $uniqeName = Storage::disk('certificate')->putFileAs(
+                    '' ,
+                    new File( $_FILES['file']['tmp_name'] ) ,
+                    str_replace( '.' , '' , uniqid( '', true ) ) . '__' . $safeOriginalName
+                );
                 $certificate->pdf = $uniqeName ;
                 $certificate->save();
                 if( Storage::disk('certificate')->exists( $certificate->pdf ) ){
@@ -308,7 +339,9 @@ class OfficerRankByCertificateController extends Controller
             /**
              * Save information of the regulator and its related information
              */
-            if( $record->update([
+            $existingPdf = is_string($record->pdf) ? trim($record->pdf) : '';
+            $clearPdf = intval( $request->clear_pdf ?? 0 ) > 0 ;
+            $updateData = [
                 'officer_id' => $officer->id ,
                 'organization' => $request->organization?? '' ,
                 'location' => $request->location?? '' ,
@@ -318,7 +351,14 @@ class OfficerRankByCertificateController extends Controller
                 'certificate' => $request->certificate?? '' ,
                 'updated_by' => \Auth::user()->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d')
-            ]) ){
+            ];
+            if( $clearPdf ){
+                $updateData['pdf'] = '' ;
+            }
+            if( $record->update( $updateData ) ){
+                if( $clearPdf && $existingPdf !== '' && Storage::disk('certificate')->exists( $existingPdf ) ){
+                    Storage::disk("certificate")->delete( $existingPdf );
+                }
                 $record->with('officer');
                 $responseData['message'] = __("crud.read.success");
                 $responseData['ok'] = true ;
@@ -377,9 +417,9 @@ class OfficerRankByCertificateController extends Controller
             /**
              * Delete all the related documents own by this regulator
              */
-            // if( $tempRecord->pdf !== null && $tempRecord->pdf !=="" && Storage::disk('certificate')->exists( $tempRecord->pdf ) ){
-            //     Storage::disk("certificate")->delete( $tempRecord->pdf  );
-            // }
+            if( $tempRecord->pdf !== null && $tempRecord->pdf !=="" && Storage::disk('certificate')->exists( $tempRecord->pdf ) ){
+                Storage::disk("certificate")->delete( $tempRecord->pdf  );
+            }
             return response()->json([
                 'record' => $tempRecord ,
                 'ok' => true ,

@@ -470,6 +470,7 @@ Route::group([
     require( 'admin/passport.php');
     require( 'admin/spokenlanguage.php');
     require( 'admin/officerjobbackground.php');
+    require( 'admin/officerrank.php');
     require( 'admin/officerrankbyworking.php');
     require( 'admin/officerrankbycertificate.php');
     require( 'admin/rank.php');

@@ -15,6 +15,11 @@ return new class extends Migration
             $table->increments('id');
             $table->integer('passport_id')->nullable(true);
             $table->string('public_key', 191)->default('1e95926c06441aa6f8cfc1075889d454')->comment('The public of the people, use when accessing from the outside of the system.');
+            $table->string('namekh', 191)->nullable(true); // អ៊ុំចំរើន
+            $table->string('namekhreverse', 191)->nullable(true); // ចំរើនអ៊ុំ
+            $table->string('nameen', 191)->nullable(true); // chamroeunoum
+            $table->string('nameenreverse', 191)->nullable(true); // oumchamroeun
+            $table->string('firstname', 191);
             $table->string('firstname', 191);
             $table->string('lastname', 191);
             $table->string('enfirstname', 191)->nullable();

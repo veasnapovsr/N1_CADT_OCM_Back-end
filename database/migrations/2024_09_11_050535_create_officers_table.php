@@ -26,17 +26,17 @@ return new class extends Migration
             $table->string('salary_rank',50)->nullable(true);
             $table->string('officer_type',191)->nullable(true)->comment('krobkhan of the officer');
             $table->string('additional_officer_type',191)->nullable(true)->comment('this field use to identify others condition of officer_type');
-            
+
             // Optional
             $table->integer('organization_id')->default(0)->comment('The current organization of the officer ');
             $table->integer('position_id')->default(0)->comment('The current position of the officer');
-            $table->integer('rank_id')->default(0)->comment('The current rank or level of the officer');
+            $table->integer('rank_id')->nullable(true)->default(0)->comment('The current rank or level of the officer');
             $table->integer('leader')->default(0);
             $table->string('image', 191)->nullable();
             $table->text('pdf', 191)->nullable();
             $table->string('passport', 191)->nullable();
 
-            // Immergency Contract 
+            // Immergency Contract
             $table->string('emergency_firstname',191)->nullable(true);
             $table->string('emergency_lastname',191)->nullable(true);
             $table->string('emergency_enfirstname',191)->nullable(true);

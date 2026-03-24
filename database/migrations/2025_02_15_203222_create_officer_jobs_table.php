@@ -16,9 +16,10 @@ return new class extends Migration
         Schema::create('officer_jobs', function (Blueprint $table) {
             $table->id();
             $table->integer('organization_structure_position_id')->nullable(false);
-            $table->integer('unofficial_position_id')->nullable(true)->default(0);
+            $table->integer('unofficial_position_id')->nullable(true)->default(0)->comment('This field is used to assign another position that is not official it related to positions table');
             $table->integer('officer_id')->nullable(false);
             $table->integer('countesy_id')->nullable(false);
+            $table->string('email',191)->nullable(true);
             $table->string('start',50)->nullable(false);
             $table->string('end',50)->nullable(true);
             $table->integer('created_by')->nullable(true);

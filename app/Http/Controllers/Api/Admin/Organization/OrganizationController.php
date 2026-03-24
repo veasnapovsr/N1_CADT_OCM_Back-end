@@ -848,7 +848,7 @@ class OrganizationController extends Controller
         $childNode->update([
             'pid' => $parentNode->id , 
             // Update tpid because the last id of the tpid is the id of the previous parent node and we need to change it to the new parent node
-            'tpid' => $parentNode->tpid .':'. $parentNode->id . ':',
+            'tpid' => $parentNode->tpid . $parentNode->id . ':',
             'updated_by' => $user->id
         ] );
         $parentNode->organization;
