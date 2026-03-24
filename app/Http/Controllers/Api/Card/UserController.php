@@ -366,7 +366,7 @@ class UserController extends Controller
         if( $request->email != "" ){
             $user = \App\Models\User::where('email',$request->email )->first();
             if ($user) {
-                $user -> forgot_password_token = Str::random(60) ;
+                $user -> forgot_password_token = \App\Utils\Helper::generateNumericCode() ;
                 $user -> update();
                 
                 Mail::to($request->email)

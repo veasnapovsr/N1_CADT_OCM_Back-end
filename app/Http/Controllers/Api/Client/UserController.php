@@ -155,7 +155,7 @@ class UserController extends Controller
         if( $request->email != "" ){
             $user = \App\Models\User::where('email',$request->email )->first();
             if ($user) {
-                $user -> forgot_password_token = strtoupper( Str::random(6) ) ;
+                $user -> forgot_password_token = \App\Utils\Helper::generateNumericCode() ;
                 $user -> update();
                 
                 $user->notify( new PasswordResetRequest() );

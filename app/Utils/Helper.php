@@ -75,6 +75,12 @@ class Helper {
 		$d = \DateTime::createFromFormat($format, $date);
 		return $d && $d->format($format) == $date;
 	}
+	public static function generateNumericCode($length = 6)
+	{
+		$max = (10 ** $length) - 1;
+
+		return str_pad((string) random_int(0, $max), $length, '0', STR_PAD_LEFT);
+	}
 	public static function getFileErrorMessage($fileError){
 		// Check $_FILES['upfile']['error'] value.
 		switch ($fileError) {

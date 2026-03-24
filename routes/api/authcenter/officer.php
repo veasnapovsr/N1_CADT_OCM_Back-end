@@ -24,6 +24,7 @@ Route::group([
     /**
      * Create a record
      */
+    Route::post('upload',[OfficerController::class,'upload']);
     Route::post('create',[OfficerController::class,'storeOfficer']);
     Route::post('createnonofficer',[OfficerController::class,'storeNonOfficer']);
     /**
@@ -33,7 +34,7 @@ Route::group([
     /**
      * Delete a record
      */
-    Route::delete('{id}/delete',[OfficerController::class,'delete']);
+    Route::delete('{id}/delete',[OfficerController::class,'destroy']);
 
     /**
      * Activate, Deactivate account

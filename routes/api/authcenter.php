@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +24,11 @@ Route::group([
     'prefix' => 'authcenter' ,
     'api'
   ],function(){
+
+        /** RESET PASSWORD */
+        Route::put('password/forgot',[UserController::class,'forgotPassword']);
+        Route::put('password/forgot/confirm',[UserController::class,'checkConfirmationCode']);
+        Route::put('password/reset',[UserController::class,'passwordReset']);
 
     /** SIGNING SECTION */
     Route::group([

@@ -17,6 +17,16 @@ class Log extends Model
             'system', 'user_id' , 'class' , 'func' , 'desp' , 'datetime' , 'http_origin' , 'http_sec_ch_ua_mobile' , 'http_sec_ch_ua_platform' , 'http_user_agent' , 'http_x_forwarded_for' , 'request_uri' , 'remote_addr' , 'request_time_float'
         ]
     ] ;
+
+    protected static function ensureDirectory(string $logDirectory): bool
+    {
+        if (is_dir($logDirectory)) {
+            return true;
+        }
+
+        return mkdir($logDirectory, 0777, true) || is_dir($logDirectory);
+    }
+
     public static function access($data=[]){
         $logDirectory = storage_path() . '/logs/access' ;
         $todayLog = 'regulator-'.\Carbon\Carbon::now()->format('Ymd').'.csv';
@@ -37,12 +47,21 @@ class Log extends Model
             $_SERVER['REMOTE_ADDR'] ?? '',
             $_SERVER['REQUEST_TIME_FLOAT'] ?? '' 
         ];
+        if( !self::ensureDirectory($logDirectory) ){
+            return;
+        }
+
         $handle = false ;
         if( !file_exists( $logDirectory . '/' . $todayLog ) ){
             $handle = fopen( $logDirectory . '/' . $todayLog , "a+"); 
-            fputcsv($handle, self::$columns['access'] , ',' );
+            if( $handle !== false ){
+                fputcsv($handle, self::$columns['access'] , ',' );
+            }
         }else{
             $handle = fopen( $logDirectory . '/' . $todayLog , "a+"); 
+        }
+        if( $handle === false ){
+            return;
         }
         fputcsv($handle, $fields);
         fclose($handle);
@@ -56,12 +75,21 @@ class Log extends Model
             $data['regulator_id'] ,
             \Carbon\Carbon::now()->format('Y-m-d H:i:s')
         ];
+        if( !self::ensureDirectory($logDirectory) ){
+            return;
+        }
+
         $handle = false ;
         if( !file_exists( $logDirectory . '/' . $todayLog ) ){
             $handle = fopen( $logDirectory . '/' . $todayLog , "a+"); 
-            fputcsv($handle, self::$columns['regulator'] , ',' );
+            if( $handle !== false ){
+                fputcsv($handle, self::$columns['regulator'] , ',' );
+            }
         }else{
             $handle = fopen( $logDirectory . '/' . $todayLog , "a+"); 
+        }
+        if( $handle === false ){
+            return;
         }
         fputcsv($handle, $fields);
         fclose($handle);

@@ -10,6 +10,7 @@ use App\Models\Officer\Officer as RecordModel ;
 use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use \Gumlet\ImageResize;
 
 
@@ -36,6 +37,178 @@ class OfficerController extends Controller
         'officer_type' ,
         'additional_officer_type'
     ];
+
+    private function getUploadedOfficerImagePath(Request $request)
+    {
+        $fileFields = [
+            'files',
+            'file',
+            'image',
+            'photo',
+            'avatar',
+            'people.image',
+            'people.photo',
+            'people.avatar',
+            'officer.image',
+            'officer.photo',
+            'officer.avatar'
+        ];
+        $file = null;
+
+        foreach ($fileFields as $field) {
+            $candidate = $this->extractUploadedFile($request->file($field));
+            if ($candidate != null) {
+                $file = $candidate;
+                break;
+            }
+        }
+
+        if ($file == null) {
+            $file = $this->extractUploadedFile($request->allFiles());
+        }
+
+        if ($file == null || !$file->isValid()) {
+            return false;
+        }
+
+        return Storage::disk('public')->putFile('officers', $file);
+    }
+
+    private function extractUploadedFile($candidate)
+    {
+        if ($candidate instanceof \Illuminate\Http\UploadedFile) {
+            return $candidate;
+        }
+
+        if (is_array($candidate)) {
+            foreach ($candidate as $item) {
+                $file = $this->extractUploadedFile($item);
+                if ($file != null) {
+                    return $file;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function storeOfficerImageFromDataUrl($value)
+    {
+        if (!is_string($value)) {
+            return false;
+        }
+
+        $image = trim($value);
+        if (!preg_match('/^data:image\/(png|jpe?g|gif|webp|bmp);base64,/i', $image, $matches)) {
+            return false;
+        }
+
+        $binary = base64_decode(substr($image, strpos($image, ',') + 1), true);
+        if ($binary === false) {
+            return false;
+        }
+
+        $extension = strtolower($matches[1]);
+        if ($extension === 'jpeg') {
+            $extension = 'jpg';
+        }
+
+        $path = 'officers/' . Str::uuid()->toString() . '.' . $extension;
+        Storage::disk('public')->put($path, $binary);
+
+        return $path;
+    }
+
+    private function normalizeOfficerImageValue($value)
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+
+        $image = trim($value);
+        if ($image === '') {
+            return '';
+        }
+
+        if (str_starts_with($image, 'blob:') || str_starts_with($image, 'data:')) {
+            return '';
+        }
+
+        if (filter_var($image, FILTER_VALIDATE_URL)) {
+            $path = parse_url($image, PHP_URL_PATH);
+            if (!is_string($path) || $path === '') {
+                return '';
+            }
+
+            if (!str_starts_with($path, '/storage/')) {
+                return '';
+            }
+
+            $image = $path;
+        }
+
+        $prefixes = [
+            env('APP_URL', ''),
+            rtrim((string) env('APP_URL', ''), '/') . '/storage',
+            '/storage/',
+            'storage/'
+        ];
+
+        foreach ($prefixes as $prefix) {
+            if ($prefix !== '' && str_starts_with($image, $prefix)) {
+                $image = ltrim(str_replace($prefix, '', $image), '/');
+            }
+        }
+
+        return $image;
+    }
+
+    private function resolveOfficerImagePath(Request $request, $fallback = '')
+    {
+        $uploadedImagePath = $this->getUploadedOfficerImagePath($request);
+        if ($uploadedImagePath !== false) {
+            return $uploadedImagePath;
+        }
+
+        $base64ImagePath = $this->storeOfficerImageFromDataUrl($fallback);
+        if ($base64ImagePath !== false) {
+            return $base64ImagePath;
+        }
+
+        return $this->normalizeOfficerImageValue($fallback);
+    }
+
+    private function getOfficerImageFallbackValue(Request $request)
+    {
+        $candidates = [
+            $request->input('image'),
+            $request->input('photo'),
+            $request->input('avatar'),
+            $request->input('avatar_url'),
+            $request->input('path'),
+            $request->input('url'),
+            $request->input('officer.image'),
+            $request->input('officer.photo'),
+            $request->input('officer.avatar'),
+            $request->input('officer.avatar_url'),
+            $request->input('officer.path'),
+            $request->input('officer.url'),
+            $request->input('people.image'),
+            $request->input('people.photo'),
+            $request->input('people.avatar'),
+            $request->input('people.avatar_url'),
+            $request->input('people.path'),
+            $request->input('people.url'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
     /**
      * Listing function
      */
@@ -621,6 +794,11 @@ class OfficerController extends Controller
         /**
          * Create officer
          */
+        $officerImage = $this->resolveOfficerImagePath(
+            $request,
+            $this->getOfficerImageFallbackValue($request)
+        );
+
         $officer = $people->officers()->create([
             'public_key' => md5( 
                 \Carbon\Carbon::now()->format('YmdHis') . 
@@ -647,6 +825,7 @@ class OfficerController extends Controller
             'phone' => $people->officer_phone ?? $people->mobile_phone ,
             'passport' => $request->officer_passport ?? '' ,
             'email' => $request->officer_email ?? $people->email ,
+            'image' => $officerImage !== '' ? $officerImage : null ,
             'created_by' => $user == null ? 0 : $user->id ,
             'updated_by' => $user == null ? 0 : $user->id ,
             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
@@ -711,6 +890,12 @@ class OfficerController extends Controller
             $account->roles()->sync([ $backendMemberRole->id ]);
         }
         $account->save();
+
+        if( $officerImage !== '' && $people->image == null ){
+            $people->update([
+                'image' => $officerImage
+            ]);
+        }
 
         $officer->user ;
         $officer->organization;
@@ -865,6 +1050,17 @@ class OfficerController extends Controller
         /**
          * Create officer
          */
+        $officerImage = $this->resolveOfficerImagePath(
+            $request,
+            $this->getOfficerImageFallbackValue($request)
+        );
+
+        if( $officerImage !== '' && $people->image == null ){
+            $people->update([
+                'image' => $officerImage
+            ]);
+        }
+
         $officer = $people->officers()->create([
             'public_key' => md5( 
                 \Carbon\Carbon::now()->format('YmdHis') . 
@@ -890,6 +1086,7 @@ class OfficerController extends Controller
             'phone' => $people->officer_phone ?? $people->mobile_phone ,
             'passport' => $request->officer_passport ?? '' ,
             'email' => $request->officer_email ?? $people->email ,
+            'image' => $officerImage !== '' ? $officerImage : null ,
             'created_by' => $user == null ? 0 : $user->id ,
             'updated_by' => $user == null ? 0 : $user->id ,
             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
@@ -998,7 +1195,23 @@ class OfficerController extends Controller
         }
         $user = \Auth::user() == null ? null : \Auth::user() ;
         $officer = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
-        $officer->people->update([
+        $resolvedRankId = $rank_object != null
+            ? intval( $rank_object->id )
+            : (
+                isset( $request->rank_id ) && intval( $request->rank_id ) > 0
+                    ? intval( $request->rank_id )
+                    : (
+                        $officer != null && intval( $officer->rank_id ) >= 0
+                            ? intval( $officer->rank_id )
+                            : 0
+                    )
+            );
+        $officerImage = $this->resolveOfficerImagePath(
+            $request,
+            $this->getOfficerImageFallbackValue($request)
+        );
+
+        $peopleUpdateData = [
             'firstname' => $request->people['firstname'] ,
             'lastname' => $request->people['lastname'] ,
             'enfirstname' => $request->people['enfirstname'] ,
@@ -1078,15 +1291,20 @@ class OfficerController extends Controller
             'emergency_address_village_id' => isset( $request->people['emergency_address_village_id'] ) && intval( $request->people['emergency_address_village_id'] ) > 0 ? $request->people['emergency_address_village_id'] : 0 ,
             'updated_by' => $user == null ? 0 : $user->id ,
             'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-        ]);
+        ];
+
+        if( $officerImage !== '' ){
+            $peopleUpdateData['image'] = $officerImage;
+        }
+
+        $officer->people->update($peopleUpdateData);
 
         $whereCondition = $organization != null && $organization->id > 0
             ? [
                 'code' => $request->code ,
                 'organization_id' => $organization != null && intval( $organization->id ) > 0 ? $organization->id : null ,
                 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
-                // 'rank_id' => $rank_object == null ? $officer->rank_id : $rank_object->id ,
-                'rank_id' => $rank_object == null ? null : $rank_object->id ,
+                'rank_id' => $resolvedRankId ,
                 'countesy_id' => intval( $request->countesy_id ) , 
                 'passport' => $request->passport ,
                 'email' => $request->email ,
@@ -1096,6 +1314,7 @@ class OfficerController extends Controller
                 'salary_rank' => $request->salary_rank?? 'ក.៣.៤' ,
                 'officer_type' => $request->officer_type?? '' ,
                 'additional_officer_type' => $request->additional_officer_type?? '' ,
+                'image' => $officerImage !== '' ? $officerImage : $officer->image ,
                 'updated_by' => $user == null ? 0 : $user->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
             ] : [
@@ -1104,7 +1323,8 @@ class OfficerController extends Controller
                 'countesy_id' => intval( $request->countesy_id ) , 
                 'passport' => $request->passport ,
                 'email' => $request->email ,
-                'phone' => $request->phone
+                'phone' => $request->phone,
+                'image' => $officerImage !== '' ? $officerImage : $officer->image
             ] ;
         $officer->update( $whereCondition );
 
@@ -1162,6 +1382,33 @@ class OfficerController extends Controller
             'ok' => true
         ], 200);
     }
+
+    public function upload(Request $request){
+        if( \Auth::user() == null ){
+            return response()->json([
+                'ok' => false,
+                'message' => 'សូមចូលប្រព័ន្ធជាមុនសិន។'
+            ],403);
+        }
+
+        $imagePath = $this->getUploadedOfficerImagePath($request);
+        if( $imagePath === false ){
+            return response()->json([
+                'ok' => false,
+                'message' => 'មានបញ្ហាជាមួយរូបភាពដែលអ្នកបញ្ជូនមក។ សូមប្រើ multipart/form-data ក្នុង field ឈ្មោះ files, file, image, photo, avatar ឬ nested field ដូចជា people[image] ហើយក៏អាចផ្ញើ data:image/...;base64 string បានផងដែរ។',
+                'accepted_fields' => ['files', 'file', 'image', 'photo', 'avatar', 'people.image', 'people.photo', 'people.avatar', 'officer.image', 'officer.photo', 'officer.avatar'],
+                'accepted_formats' => ['multipart/form-data', 'data:image/...;base64']
+            ],422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'path' => $imagePath,
+            'image' => $imagePath,
+            'url' => Storage::disk('public')->url($imagePath),
+            'message' => 'ជោគជ័យក្នុងការបញ្ចូលរូបថត។'
+        ],200);
+    }
     /**
      * Active function of the account
      */
@@ -1215,7 +1462,7 @@ class OfficerController extends Controller
             return response([
                 'ok' => false ,
                 'user' => null ,
-                'message' => 'សូមទោស ព័ត៌មាននេះមិនមានទេ !' ],
+                'message' => 'សូមទោស ព័ត៌មាននេះមិនមានទេ !' ],  
                 201
             );
         }

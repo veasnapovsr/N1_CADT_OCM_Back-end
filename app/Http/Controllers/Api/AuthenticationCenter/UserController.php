@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\AuthenticationCenter;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\MobilePasswordResetRequest;
 use Illuminate\Support\Facades\Mail;
@@ -373,14 +374,50 @@ class UserController extends Controller
         );
     }
 
+    protected function getResetIdentifier(Request $request)
+    {
+        return trim((string) ($request->identifier ?? $request->email ?? $request->username ?? $request->phone ?? ''));
+    }
+
+    protected function getRequestedResetPassword(Request $request)
+    {
+        return (string) ($request->password ?? $request->new_password ?? $request->newPassword ?? '');
+    }
+
+    protected function getRequestedResetPasswordConfirmation(Request $request)
+    {
+        return (string) ($request->password_confirmation ?? $request->new_password_confirmation ?? $request->newPasswordConfirmation ?? '');
+    }
+
+    protected function findUserByResetIdentifier(string $identifier)
+    {
+        if ($identifier === '') {
+            return null;
+        }
+
+        return RecordModel::where(function ($query) use ($identifier) {
+            $query->where('email', $identifier)
+                ->orWhere('username', $identifier)
+                ->orWhere('phone', $identifier);
+        })->first();
+    }
+
     public function forgotPassword(Request $request){
-        if( $request->email != "" ){
-            $user = \App\Models\User::where('email',$request->email )->first();
+        $identifier = $this->getResetIdentifier($request);
+
+        if( $identifier != "" ){
+            $user = $this->findUserByResetIdentifier($identifier);
             if ($user) {
-                $user -> forgot_password_token = Str::random(60) ;
+                if( !isset($user->email) || trim((string) $user->email) == '' ){
+                    return response()->json([
+                        'ok' => false ,
+                        'message' => 'គណនីនេះមិនមានអ៊ីមែលសម្រាប់ទទួលលេខកូដផ្លាស់ប្ដូរពាក្យសម្ងាត់ទេ។'
+                    ], 422);
+                }
+                $user -> forgot_password_token = \App\Utils\Helper::generateNumericCode() ;
                 $user -> update();
                 
-                Mail::to($request->email)
+                Mail::to($user->email)
                     ->send( new MobilePasswordResetRequest($user) );
 
                 return response()->json([
@@ -391,22 +428,26 @@ class UserController extends Controller
             }else{
                 return response()->json([
                     'ok' => false ,
-                    'message' => 'អ៊ីមែលនេះមិនទាន់ក្នុងប្រព័ន្ធឡើយ !'
+                    'message' => 'អ៊ីមែល ឈ្មោះគណនី ឬ លេខទូរស័ព្ទនេះ មិនទាន់មានក្នុងប្រព័ន្ធឡើយ !'
                 ], 404);
             }
         }
         return response()->json([
             'ok' => false ,
-            'message' => 'សូមបញ្ជាក់អំពី អ៊ីមែលរបស់អ្នក !'
+            'message' => 'សូមបញ្ជាក់អំពី អ៊ីមែល ឈ្មោះគណនី ឬ លេខទូរស័ព្ទរបស់អ្នក !'
         ], 422);
     }
     public function checkConfirmationCode(Request $request){
-        if( $request->email != "" && $request->code != "" ){
-            $user = \App\Models\User::where( 'email',$request->email )->where('forgot_password_token', $request->code )->first();
-            return $user ;
+        $identifier = $this->getResetIdentifier($request);
+
+        if( $identifier != "" && $request->code != "" ){
+            $user = RecordModel::where('forgot_password_token', trim((string) $request->code))
+                ->where(function ($query) use ($identifier) {
+                    $query->where('email', $identifier)
+                        ->orWhere('username', $identifier)
+                        ->orWhere('phone', $identifier);
+                })->first();
             if ($user) {
-                $user -> forgot_password_token = '' ;
-                $user -> update();
                 return response()->json([
                     'record' => $user ,
                     'ok' => true ,
@@ -421,15 +462,57 @@ class UserController extends Controller
         }
         return response()->json([
             'ok' => false ,
-            'message' => 'សូមបញ្ជាក់អំពី អ៊ីមែល ឬ កូដផ្លាស់ប្ដូរសម្ងាត់ របស់អ្នក !'
+            'message' => 'សូមបញ្ជាក់អំពី អ៊ីមែល ឈ្មោះគណនី លេខទូរស័ព្ទ ឬ កូដផ្លាស់ប្ដូរសម្ងាត់ របស់អ្នក !'
         ], 422);
     }
     public function passwordReset(Request $request){
-        
-        $record = \App\Models\User::where('email',$request->email)->first();
+        $identifier = $this->getResetIdentifier($request);
+        $code = trim((string) ($request->code ?? ''));
+        $password = $this->getRequestedResetPassword($request);
+        $passwordConfirmation = $this->getRequestedResetPasswordConfirmation($request);
+
+        if( $identifier === '' ){
+            return response([
+                'record' => null ,
+                'ok' => false ,
+                'message' => 'មានបញ្ហា អ៊ីមែល ឈ្មោះគណនី ឬ លេខទូរស័ព្ទ មិនត្រឹមត្រូវ សូមធ្វើការកំណត់ឡើងវិញម្ដងទៀត !'
+            ],422);
+        }
+
+        if( $code === '' ){
+            return response([
+                'record' => null ,
+                'ok' => false ,
+                'message' => 'សូមបញ្ជាក់លេខកូដផ្លាស់ប្ដូរសម្ងាត់របស់អ្នក។'
+            ],422);
+        }
+
+        if( $password === '' ){
+            return response([
+                'record' => null ,
+                'ok' => false ,
+                'message' => 'សូមបញ្ចូលពាក្យសម្ងាត់ថ្មីរបស់អ្នក។'
+            ],422);
+        }
+
+        if( $passwordConfirmation !== '' && $password !== $passwordConfirmation ){
+            return response([
+                'record' => null ,
+                'ok' => false ,
+                'message' => 'ពាក្យសម្ងាត់ថ្មី និង ការបញ្ជាក់ពាក្យសម្ងាត់ មិនដូចគ្នាទេ។'
+            ],422);
+        }
+
+        $record = RecordModel::where('forgot_password_token', $code)
+            ->where(function ($query) use ($identifier) {
+                $query->where('email', $identifier)
+                    ->orWhere('username', $identifier)
+                    ->orWhere('phone', $identifier);
+            })->first();
+
         if( $record ){
-            // $record->password = Hash::make($request->password);
-            $record->password = bcrypt($request->password);
+            $record->password = Hash::make($password);
+            $record->forgot_password_token = '';
             $record->update();
             return response([
                 'record' => $record ,
@@ -440,8 +523,8 @@ class UserController extends Controller
             return response([
                 'record' => null ,
                 'ok' => false ,
-                'message' => 'មានបញ្ហា អ៊ីមែល មិនត្រឹមត្រូវ សូមធ្វើការកណត់ឡើងវិញម្ដងទៀត !'
-            ],201);
+                'message' => 'លេខកូដផ្លាស់ប្ដូរសម្ងាត់ ឬ គណនីរបស់អ្នក មិនត្រឹមត្រូវទេ។ សូមព្យាយាមម្ដងទៀត !'
+            ],404);
         }
         // 'password' => bcrypt($request->password),
     }

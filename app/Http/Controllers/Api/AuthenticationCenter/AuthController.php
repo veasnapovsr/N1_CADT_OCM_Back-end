@@ -107,7 +107,7 @@ class AuthController extends Controller
         $credentials['deleted_at'] = null;
 
         if(!Auth::attempt($credentials)){
-            if( User::where('email', $request->email) != null ){
+            if( User::where('email', $request->email)->exists() ){
                 /**
                  * Account does exist but the password might miss type
                  */
