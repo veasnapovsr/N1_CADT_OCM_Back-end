@@ -4,17 +4,19 @@ namespace App\Http\Controllers\Api\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesAvatarUploads;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\MobilePasswordResetRequest;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User as RecordModel ;
 use App\Http\Controllers\CrudController;
-use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 
 
 class UserController extends Controller
 {
+    use HandlesAvatarUploads;
+
     private $selectFields = [
         'id',
         'firstname' ,
@@ -686,10 +688,9 @@ class UserController extends Controller
     public function upload(Request $request){
         $user = \Auth::user();
         if( $user ){
-            if( isset( $_FILES['files']['tmp_name'] ) && $_FILES['files']['tmp_name'] != "" ) {
-                if( ( $user = RecordModel::find($request->id) ) !== null ){
-                    $uniqeName = Storage::disk('public')->putFile( 'avatars/'.$user->id , new File( $_FILES['files']['tmp_name'] ) );
-                    $user->avatar_url = $uniqeName ;
+            if( ( $user = RecordModel::find($request->id) ) !== null ){
+                if( ( $imagePath = $this->storeAvatarUpload($request, $user->id) ) != null ) {
+                    $user->avatar_url = $imagePath ;
                     $user->save();
                     if( Storage::disk('public')->exists( $user->avatar_url ) ){
                         $user->avatar_url = Storage::disk('public')->url( $user->avatar_url  );
@@ -705,13 +706,13 @@ class UserController extends Controller
                     }
                 }else{
                     return response([
-                        'message' => 'សូមបញ្ជាក់អំពីលេខសម្គាល់របស់គណនី។'
+                        'result' => $request->allFiles() ,
+                        'message' => 'មានបញ្ហាជាមួយរូបភាពដែលអ្នកបញ្ជូនមក។'
                     ],403);
                 }
             }else{
                 return response([
-                    'result' => $_FILES ,
-                    'message' => 'មានបញ្ហាជាមួយរូបភាពដែលអ្នកបញ្ជូនមក។'
+                    'message' => 'សូមបញ្ជាក់អំពីលេខសម្គាល់របស់គណនី។'
                 ],403);
             }
             
@@ -724,10 +725,9 @@ class UserController extends Controller
     public function updateUserProfile(Request $request){
         $user = intval( $request->id ) > 0 ? \App\Models\User::find( intval( $request->id ) ) : null ;
         if( $user != null ){
-            if( isset( $_FILES['files']['tmp_name'] ) && $_FILES['files']['tmp_name'] != "" ) {
+            if( ( $imagePath = $this->storeAvatarUpload($request, $user->id) ) != null ) {
                 if( ( $user = RecordModel::find($request->id) ) !== null ){
-                    $uniqeName = Storage::disk('public')->putFile( 'avatars/'.$user->id , new File( $_FILES['files']['tmp_name'] ) );
-                    $user->avatar_url = $uniqeName ;
+                    $user->avatar_url = $imagePath ;
                     $user->save();
                     if( Storage::disk('public')->exists( $user->avatar_url ) ){
                         $user->avatar_url = Storage::disk('public')->url( $user->avatar_url  );
@@ -748,7 +748,7 @@ class UserController extends Controller
                 }
             }else{
                 return response([
-                    'result' => $_FILES ,
+                    'result' => $request->allFiles() ,
                     'message' => 'មានបញ្ហាជាមួយរូបភាពដែលអ្នកបញ្ជូនមក។'
                 ],403);
             }

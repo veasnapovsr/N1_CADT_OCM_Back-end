@@ -24,7 +24,10 @@ class Document extends Model
      * Relationships
      */
     public function transaction(){
-        return $this->hasOne( \App\Models\Document\Transaction::class , 'document_id' , 'id' );
+        return $this->hasOne( \App\Models\Document\Transaction::class , 'document_id' , 'id' )->latestOfMany('id');
+    }
+    public function transactions(){
+        return $this->hasMany( \App\Models\Document\Transaction::class , 'document_id' , 'id' );
     }
     public function briefings(){
         return $this->hasMany( \App\Models\Document\Briefing::class , 'document_id' , 'id' );

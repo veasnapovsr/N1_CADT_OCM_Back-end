@@ -9,8 +9,10 @@ use App\Models\Document\OrganizationFocalPeople;
 use App\Http\Controllers\CrudController;
 use Illuminate\Http\File;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Spatie\PdfToImage\Pdf;
+// use Spatie\PdfToImage\Pdf;
 
 
 class TransactionController extends Controller
@@ -211,24 +213,7 @@ class TransactionController extends Controller
          * 1. ចម្រោះប្រតិបត្តិការឯកសារដោយយោងតាមអ្នកទទួល
          * 2. ចម្រោះប្រតិបត្តិការឯកសារតាមអ្នកបញ្ជូន
          */
-        $builder->where(function($query){
-            $query->whereNull('previous_transaction_id')
-                  ->orWhere('previous_transaction_id',0);
-        })
-        // ->where( function($query) use( $user ){
-        //     $query->where('sender_id' , $user->id )
-
-        ->where(function ($query) use ($user) {
-            if (!$user) {
-                return;}
-                $query->where('sender_id', $user->id)
-                ->orWhereHas('receivers', function ($queryBuilder) use ($user){
-                    if ($user->officer) {
-                        $queryBuilder->whereIn('receiver_id', [$user->officer->id]);
-                    }
-
-                });
-        });
+        $this->applyTransactionVisibilityScope($builder, $user);
 
         //     ->orWhereHas('receivers',function($queryBuilder) use( $user ){
         //         $queryBuilder->whereIn('receiver_id', [ $user->officer->id ] );
@@ -238,6 +223,9 @@ class TransactionController extends Controller
         $responseData = $crud->pagination(true, $builder);
 
         $responseData['records'] = $responseData['records']->map(function($record){
+            $record['document'] = isset($record['document']) && is_array($record['document'])
+                ? $record['document']
+                : null;
             $receivers = collect( $record['receivers'] )->pluck('id')->toArray();
             $record['receivers'] = \App\Models\Officer\Officer::whereIn( 'id', $receivers )->get()->map(function($receiver){
                 return [
@@ -259,11 +247,22 @@ class TransactionController extends Controller
 
            //==========ទាញយកPDf Thumbnail===============
        //    $record['sender']['pdf_thumbnail'] = \Storage::disk('public')->url('doctransaction/' . $record['document']['id'] . '/thumbnail/firtpage.jpg');
-           $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-           if (Storage::disk('public')->exists($thumbnailPath)) {
-               $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+           if ($record['document'] != null && isset($record['document']['id'])) {
+               $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+               if (Storage::disk('public')->exists($thumbnailPath)) {
+                   $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+               } else {
+                   $record['document']['thumbnail'] = null;
+               }
            } else {
-               $record['document']['thumbnail'] = null;
+               $record['document'] = [
+                   'id' => null,
+                   'thumbnail' => null,
+                   'pdf_file' => null,
+                   'word_file' => null,
+                   'pdf_file_size' => 0,
+                   'word_file_size' => 0,
+               ];
            }
 
             // if( $record['sender']['officer'] != null ){
@@ -417,6 +416,9 @@ class TransactionController extends Controller
 
         $responseData = $crud->pagination(true, $builder);
         $responseData['records'] = $responseData['records']->map(function($record){
+            $record['document'] = isset($record['document']) && is_array($record['document'])
+                ? $record['document']
+                : null;
             // Add two if state for fullnameand avatarurl
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
@@ -425,11 +427,22 @@ class TransactionController extends Controller
                 $record['sender']['avatar_url'] = \Storage::disk('public')->url( $record['sender']['avatar_url'] );
             }
             //==========ទាញយកPDf Thumbnail===============
-            $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
-            if (Storage::disk('public')->exists($thumbnailPath)) {
-                $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+            if ($record['document'] != null && isset($record['document']['id'])) {
+                $thumbnailPath = 'doctransaction/' . $record['document']['id'] . '/thumbnail/firstpage.jpg';
+                if (Storage::disk('public')->exists($thumbnailPath)) {
+                    $record['document']['thumbnail'] = Storage::disk('public')->url($thumbnailPath);
+                } else {
+                    $record['document']['thumbnail'] = null; // optional: placeholder
+                }
             } else {
-                $record['document']['thumbnail'] = null; // optional: placeholder
+                $record['document'] = [
+                    'id' => null,
+                    'thumbnail' => null,
+                    'pdf_file' => null,
+                    'word_file' => null,
+                    'pdf_file_size' => 0,
+                    'word_file_size' => 0,
+                ];
             }
             //=============================================
             // if( $record['sender']['officer'] != null ){
@@ -599,37 +612,34 @@ class TransactionController extends Controller
         ]);
         // ភ្ជាប់ឯកសារទៅកាន់ការបញ្ជូន
         $transaction->update(['document_id'=>$document->id]);
-        // ភ្ជាប់អ្នកទទួលបើសិនមាន
-        // $receivers = strlen( trim($request->receivers) ) > 0 ? explode(',',trim($request->receivers)) : [] ;
-        // if( !empty( $receivers) ){
-        //     $receivers = \App\Models\User::whereIn('id', $receivers )->get();
-        //     foreach( $receivers AS $receiver ){
-        //         $transaction->receivers()->create([
-        //             'document_transaction_id' => $transaction->id ,
-        //             'receiver_id' => $receiver->id ,
-        //             'seen_at' => null ,
-        //             'is_download' => null ,
-        //             'is_preview' => null ,
-        //             'created_by' => $sender->id ,
-        //             'updated_by' => $sender->id ,
-        //             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
-        //             'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-        //         ]);
-        //     }
-        // }
+        $flowAction = $this->resolveRequestedFlowAction(
+            $request,
+            $this->requestHasDispatchTargets($request) ? 'send' : RecordModel::STATUS_DRAFT
+        );
 
-        $this->addReceiverBaseOnOrganizationStructure($transaction , 3 );
-
-        $transaction->send();
+        if ($flowAction === 'send') {
+            $dispatchResult = $this->dispatchTransaction($transaction, $sender, $request);
+            if ($dispatchResult !== true) {
+                return $dispatchResult;
+            }
+        } elseif ($flowAction === 'diy') {
+            $transaction->update([
+                'status' => RecordModel::STATUS_PROGRESS,
+                'organization_structure_id' => $this->resolveCurrentOrganizationStructureId($sender),
+            ]);
+        }
 
         return response()->json([
             'ok' => true ,
-            'record' => $transaction ,
+            'record' => $transaction->fresh() ,
+            'flow_action' => $flowAction,
             'message' => 'ជោគជ័យ'
         ],200);
     }
 
     public function changeReceiver(Request $request){
+        $actorId = Auth::id();
+
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
         $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
         if( $transaction == null ){
@@ -661,8 +671,8 @@ class TransactionController extends Controller
                 'seen_at' => null ,
                 'is_download' => null ,
                 'is_preview' => null ,
-                'created_by' => $sender->id ,
-                'updated_by' => $sender->id ,
+                'created_by' => $actorId != null ? $actorId : $transaction->sender_id ,
+                'updated_by' => $actorId != null ? $actorId : $transaction->sender_id ,
                 'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
             ]);
@@ -681,56 +691,65 @@ class TransactionController extends Controller
          * ៣. និងត្រូវចុះពេលវេលាផងដែរ ដោយស្វ័យប្រវត្ត
          */
 
-        $receiverIds = isset( $request->receivers ) && strlen( $request->receivers ) > 0 ? explode( ',' , $request->receiver_ids ) : false ;
-
-        $organizationStructure = isset( $request->organizatoin_structure_id ) && intval( $request->organizatoin_structure_id ) > 0 ? \App\Models\Organization\OrganizationStructure::find( $request->organization_structure_id ) : null ;
-        if( $organizationStructure == null ){
-            return response()->json([
-                'ok' => false ,
-                'message' => 'សូមបញ្ជាក់អង្គភាពដែលបញ្ជូនទៅ។'
-            ],500);
-        }
-        if( $organizationStructure->adminFocalPeople->count() <= 0 && $receiverIds == false ){
-            return response()->json([
-                'ok' => false ,
-                'message' => 'ស្ថាប័នមិនមានអ្នកទទួលឯកសារ។ សូមបញ្ជាក់អ្នកទទួលឯកសារ។'
-            ],500);
-        }
-        $receiverIds = $receiverIds != false ? array_merge( $organizationStructure->adminFocalPeople->pluck('id')->toArray() , $receiverIds ) : $organizationStructure->adminFocalPeople->pluck('id')->toArray() ;
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : 0
+                    )
+            );
 
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
-        $transaction = intval( $request->transaction_id ) > 0 ? RecordModel::find( $request->transaction_id ) : null ;
+        $transaction = $this->resolveRequestedTransaction($request, $user);
         if( $transaction == null ){
             return response()->json([
                 'ok' => false ,
                 'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
             ],422);
         }
-        // ត្រួតពិនិត្យឯកសារភ្ជាប់ជាមួយការបញ្ជូន ក្នុងករណីដែលជាឯកសារ
-        if(
-            // ត្រងចំណុចនេះមានន័យថាជាការចាប់ផ្ដើមដំបូង។ សម្រាប់ការបញ្ជូនបន្តដែលមិនមែនផ្ដើមដំបូង អនុញ្ញាតឱ្យមិនមានឯកសារ។
-            $transaction->previous_transaction_id == null &&
-            (
-                ( $transaction->document == null  ) ||
-                (
-                    $transaction->document != null &&
-                    ( $transaction->document->word_file == null || strlen( $transaction->document->word_file ) <= 0 ) &&
-                    ( $transaction->document->pdf_file == null || strlen( $transaction->document->pdf_file ) <= 0 )
-                )
-            )
-        ){
+
+        if (!$user) {
             return response()->json([
                 'ok' => false ,
-                'message' => 'ប្រតិបត្តិការនៅដើមគ្រាមិនអាចគ្មានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
-            ],422);
+                'message' => 'សូមចូលប្រើប្រាស់ជាមុនសិន។'
+            ],401);
         }
 
-        $transaction->
-        $transaction->send();
-        // ជូនដំណឹងទៅអ្នកទទួល។ ការងារនេះនិងបន្តនៅពេលក្រោយ។
+        $sendableTransaction = $this->resolveSendableTransactionForUser($transaction, $user);
+        if ($sendableTransaction instanceof \Illuminate\Http\JsonResponse) {
+            return $sendableTransaction;
+        }
+
+        $transaction = $sendableTransaction;
+
+        $flowAction = $this->resolveRequestedFlowAction($request, 'send');
+        if ($flowAction === 'diy') {
+            $transaction->update([
+                'status' => RecordModel::STATUS_PROGRESS,
+                'organization_structure_id' => $this->resolveCurrentOrganizationStructureId($user),
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'record' => $transaction->fresh(),
+                'flow_action' => $flowAction,
+                'message' => 'ជោគជ័យ'
+            ],200);
+        }
+
+        $dispatchResult = $this->dispatchTransaction($transaction, $user, $request);
+        if ($dispatchResult !== true) {
+            return $dispatchResult;
+        }
+
         return response()->json([
             'ok' => true ,
-            'record' => $transaction ,
+            'record' => $transaction->fresh() ,
+            'flow_action' => 'send',
             'message' => 'ជោគជ័យ'
         ],200);
     }
@@ -913,22 +932,22 @@ class TransactionController extends Controller
                 //     ]);
                 // }
 
-                 $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
-                        // Create folder if it doesn't exist
-                        if (!file_exists($thumbnailFolder)) {
-                            mkdir($thumbnailFolder, 0777, true); // recursive
-                        }
-                        // 2️⃣ Define thumbnail file path (name)
-                        $thumbnailFileName = 'firstpage.jpg';
-                        $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
+                //  $thumbnailFolder = storage_path('app/public/doctransaction/'.$document->id.'/thumbnail');
+                //         // Create folder if it doesn't exist
+                //         if (!file_exists($thumbnailFolder)) {
+                //             mkdir($thumbnailFolder, 0777, true); // recursive
+                //         }
+                //         // 2️⃣ Define thumbnail file path (name)
+                //         $thumbnailFileName = 'firstpage.jpg';
+                //         $thumbnailPath = $thumbnailFolder.'/'.$thumbnailFileName;
 
-                        // Remove existing thumbnail if it exists
-                        // if (file_exists($thumbnailPath)) {
-                        //     unlink($thumbnailPath);
-                        // }
+                //         // Remove existing thumbnail if it exists
+                //         // if (file_exists($thumbnailPath)) {
+                //         //     unlink($thumbnailPath);
+                //         // }
 
-                        $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
-                        $pdf->save($thumbnailPath);
+                //         $pdf = new Pdf($_FILES['pdf_file']['tmp_name']);
+                //         $pdf->save($thumbnailPath);
 
 
 
@@ -1112,17 +1131,17 @@ class TransactionController extends Controller
         // ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
-            // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
-            if( ( $receiver = $document->transaction->receiversPivot()->where('receiver_id',$user->id)->whereNotNull('accepted_at')->first() ) != null ){
-                // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
-                if( $receiver->download_at == null || strlen( $receiver->download_at ) <= 0 ){
-                    $receiver->update(['download_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-                }
-            }else{
+            $transaction = $this->resolveDocumentAccessTransaction($document->id, $user, $request);
+            $receiver = $this->resolveDocumentAccessReceiver($transaction, $user, true);
+            if ($transaction == null || ($receiver == null && (int) $transaction->sender_id !== (int) $user->id)) {
                 return response()->json([
                     'ok' => false ,
                     'message' => 'អ្នកមិនមានសិទ្ធិទាញយកឯកសារទេ។'
                 ],403);
+            }
+
+            if( $receiver != null && ( $receiver->download_at == null || strlen( $receiver->download_at ) <= 0 ) ){
+                $receiver->update(['download_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
             }
 
             $path = storage_path('app') . '/public/' . $document->word_file ; // doctransaction/49/ajdf;lakjd;flakjdf.pdf
@@ -1181,20 +1200,20 @@ class TransactionController extends Controller
         ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
-            // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
-            if( ( $receiver = $document->transaction->receiversPivot()->where('receiver_id',$user->id)->whereNotNull('accepted_at')->first() ) != null ){
-                // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
-                if( $receiver->download_at == null || strlen( $receiver->download_at ) <= 0 ){
-                    $receiver->update(['download_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-                }
-            }else{
+            $transaction = $this->resolveDocumentAccessTransaction($document->id, $user, $request);
+            $receiver = $this->resolveDocumentAccessReceiver($transaction, $user, true);
+            if ($transaction == null || ($receiver == null && (int) $transaction->sender_id !== (int) $user->id)) {
                 return response()->json([
                     'ok' => false ,
-                    $document->transaction->receivers->pluck('id') ,
                     'message' => 'អ្នកមិនមានសិទ្ធិទាញយកឯកសារទេ។'
                 ],403);
             }
-            $path = storage_path('app') . '/public/' . $document->word_file ;
+
+            if( $receiver != null && ( $receiver->download_at == null || strlen( $receiver->download_at ) <= 0 ) ){
+                $receiver->update(['download_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+            }
+
+            $path = storage_path('app') . '/public/' . $document->pdf_file ;
             // $ext = pathinfo($path);
             // $filename = $document->number . "." . $ext['extension'];
 
@@ -1211,7 +1230,7 @@ class TransactionController extends Controller
 
                 $pdfBase64 = base64_encode(
                     file_get_contents(
-                        storage_path('app') . '/public/' . $document->word_file
+                        storage_path('app') . '/public/' . $document->pdf_file
                     )
                 );
 
@@ -1254,19 +1273,20 @@ class TransactionController extends Controller
         ]);
         $document = \App\Models\Document\Document::findOrFail($request->document_id);
         if($document) {
-            // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
-            if( ( $receiver = $document->transaction->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
-                // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
-                if( $receiver->preview_at == null || strlen( $receiver->preview_at ) <= 0 ){
-                    $receiver->update(['preview_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-                }
-            }else{
+            $transaction = $this->resolveDocumentAccessTransaction($document->id, $user, $request);
+            $receiver = $this->resolveDocumentAccessReceiver($transaction, $user, false);
+            if ($transaction == null || ($receiver == null && (int) $transaction->sender_id !== (int) $user->id)) {
                 return response()->json([
                     'ok' => false ,
                     'message' => 'អ្នកមិនមានសិទ្ធិទាញយកឯកសារទេ។'
                 ],403);
             }
-            $path = storage_path('app') . '/public/' . $document->word_file ;
+
+            if( $receiver != null && ( $receiver->preview_at == null || strlen( $receiver->preview_at ) <= 0 ) ){
+                $receiver->update(['preview_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+            }
+
+            $path = storage_path('app') . '/public/' . $document->pdf_file ;
             // $ext = pathinfo($path);
             // $filename = $document->number . "." . $ext['extension'];
 
@@ -1316,7 +1336,7 @@ class TransactionController extends Controller
 
                 $pdfBase64 = base64_encode(
                     file_get_contents(
-                        storage_path('app') . '/public/' . $document->word_file
+                        storage_path('app') . '/public/' . $document->pdf_file
                     )
                 );
 
@@ -1380,7 +1400,7 @@ class TransactionController extends Controller
     }
     public function accepted(Request $request){
         // អ្នកទទួលការងារក្នុងពេលនេះនិងដើរតួជាអ្នកបញ្ជូននៅប្រតិបត្តិការបន្ទាប់
-        $receiver = \Auth::user() != null
+        $authenticatedUser = \Auth::user() != null
             ? \Auth::user()
             : (
                 auth('api')->user()
@@ -1391,11 +1411,12 @@ class TransactionController extends Controller
                             : 0
                     )
             );
+        $receiverIds = $this->getAuthenticatedReceiverIds($authenticatedUser);
         /**
          * នៅពេលទទួលការងារ អ្នកទទួល និងត្រូវបានកត់ត្រាថាជាអ្នកទទួលខុសត្រូវការងារ
          */
         // ត្រួតពិនិត្យប្រតិបត្តិការបញ្ជូន
-        $previousTransaction = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
+        $previousTransaction = $this->resolveRequestedTransaction($request, $authenticatedUser);
 
         if( $previousTransaction == null ){
             return response()->json([
@@ -1407,72 +1428,33 @@ class TransactionController extends Controller
         }
 
 
-        if( ( $receiver = $previousTransaction->receiversPivot()->where('receiver_id',$receiver->id)->first() ) != null ){
-            $receiver->update(['accepted_at'=>\Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
-        }else{
+        if( ( $receiverPivot = $previousTransaction->receiversPivot()->whereIn('receiver_id', $receiverIds)->first() ) == null ){
             return response()->json([
                 'ok' => false ,
                 'ids' => $previousTransaction->receivers->toArray() ,
                 'message' => 'អ្នកមិនមានសិទ្ធិទាញយកឯកសារទេ។'
             ],403);
         }
+        $transaction = $this->createOrReuseUserTransactionFromPrevious(
+            $previousTransaction,
+            $authenticatedUser,
+            $receiverPivot
+        );
 
-        /**
-         * បង្កើតប្រតិបត្តិការដឹកជញ្ជូនឯកសារ
-         */
-        // ត្រួតពិនិត្យម៉ោងឯកសារចូល
-        $dateIn = \Carbon\Carbon::now();
-        // ត្រួតពិនិ្យប្រធានបទនៃការបញ្ជូនឯកសារ
-        $subject = $previousTransaction->subject;
+        $flowAction = $this->resolveRequestedFlowAction($request, 'diy');
+        if ($flowAction === 'send') {
+            $dispatchResult = $this->dispatchTransaction($transaction, $authenticatedUser, $request);
+            if ($dispatchResult !== true) {
+                return $dispatchResult;
+            }
+        }
 
-        /**
-         * ប្រតិបត្តិការបញ្ជូនអាចត្រូវបាន
-         * ១. បង្អាកដោយបច្ចៃនាមួយ
-         * ២. ឬ​បញ្ហាណាមួយដែលមិនគ្រងទុក
-         * ត្រូវថែម Column 'status' និង ត្រូវមានការផ្ដល់យោបល់ ឬសាក់សួរលើបញ្ហានេះផងដែរ
-         */
-        $transaction = RecordModel::create([
-            'document_id' => null ,
-            'sender_id' => $receiver->id ,
-            'subject' => $subject ,
-            'date_in' => $dateIn->format('Y-m-d H:i:s') ,
-            'previous_transaction_id' => $previousTransaction->id ,
-            'tpid' => strlen( $previousTransaction->tpid ) > 0 ? $previousTransaction->tpid . ':' . $previousTransaction->id . ':' : $previousTransaction->id . ':' ,
-
-            'created_by' => $receiver->id ,
-            'updated_by' => $receiver->id ,
-            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
-            'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-        ]);
-
-        // ភ្ជាប់ប្រតិបត្តិការបញ្ជូនពីមុន ជាមួយ ប្រតិបត្តិការថ្មីនេះ
-        $previousTransaction->update([ 'next_transaction_id' => $transaction->id ]) ;
-        /**
-         * បង្កើតឯកសាររួចភ្ជាប់ជាមួយឯកសារដែលបានបញ្ជូនមក
-         */
-        // ត្រួតពិនិត្យលេខឯកសារ
-        $number = $previousTransaction->document->number ;
-        $public_key = md5( $number . ( $dateIn != false ? $dateIn->format('YmdHis') : '' ) );
-        // ត្រួតពិនិត្យខ្លឹមសារឯកសារ
-        $objective = $previousTransaction->document->objective;
-        //​ បង្កើតឯកសារ
-        $document = \App\Models\Document\Document::create([
-            'public_key' => $public_key ,
-            'number' => $number ,
-            'objective' => $objective ,
-            'created_by' => $receiver->id ,
-            'updated_by' => $receiver->id ,
-            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s') ,
-            'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-        ]);
-
-        // ភ្ជាប់ឯកសារទៅកាន់ការបញ្ជូន
-        $transaction->update(['document_id'=>$document->id]);
         return response()->json([
             'ok' => true ,
-            'receiver' => $receiver ,
-            'transaction' => $transaction->toArray() ,
-            'previous' => $previousTransaction->toArray() ,
+            'receiver' => $receiverPivot ,
+            'transaction' => $transaction->fresh()->toArray() ,
+            'previous' => $previousTransaction->fresh()->toArray() ,
+            'flow_action' => $flowAction,
             'message' => 'ជោគជ័យ'
         ],200);
     }
@@ -1494,6 +1476,13 @@ class TransactionController extends Controller
                     )
             );
 
+        if (!$user) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'សូមចូលប្រើប្រាស់ជាមុនសិន។'
+            ],401);
+        }
+
         $record = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
         if( $record == null ){
             return response()->json([
@@ -1502,6 +1491,18 @@ class TransactionController extends Controller
                 'message' => 'មិនមានព័ត៌មាននេះឡើយ។'
             ],403);
         }
+
+        if ((int) $record->sender_id !== (int) $user->id) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'អ្នកមិនមានសិទ្ធិលប់ប្រតិបត្តិការនេះទេ។'
+            ],403);
+        }
+
+        $record->deleted_by = $user->id;
+        $record->updated_by = $user->id;
+        $record->save();
+
         $result = $record->delete();
         return response()->json([
             'ok' => $result ,
@@ -1532,17 +1533,27 @@ class TransactionController extends Controller
         //         'message' => 'ប្រភេទនៃឯកសារមិនត្រឹមត្រូវ។'
         //     ],422);
         // }
+
+        if (!$user) {
+            return response()->json([
+                'ok' => false,
+                'records' => [],
+                'message' => 'សូមចូលប្រើប្រាស់ជាមុនសិន។'
+            ],401);
+        }
+
+        $builder = RecordModel::query();
+        $this->applyTransactionVisibilityScope($builder, $user);
+
         return response()->json([
             'ok' => true ,
             'records' => $status == false
-                ? \DB::table('document_transactions')
-                    ->select('status', \DB::raw('COUNT(*) as total'))
-                    ->where('sender_id', $user->id)
-                    ->whereNull('deleted_at')
+                ? (clone $builder)
+                    ->select('status', DB::raw('COUNT(*) as total'))
 		            ->groupBy('status')
                     ->get()->pluck('total','status')->toArray()
                 : [
-                    $status => RecordModel::whereNull( 'deleted_at' )->where('status', $status )->count()
+                    $status => (clone $builder)->where('status', $status )->count()
                 ]  ,
             'message' => 'រួចរាល់'
         ],200);
@@ -1659,17 +1670,20 @@ public function restoreFocalReceiver($id)
 }
 
     private function addReceiverBaseOnOrganizationStructure($transaction , $organizationStructureId){
-        $user = \Auth::user() != null
+        $authenticatedUser = \Auth::user() != null
             ? \Auth::user()
             : (
                 auth('api')->user()
                     ? auth('api')->user()
                     : (
-                        $request->user() != null
-                            ? $request->user()
-                            : 0
+                        request()->user() != null
+                            ? request()->user()
+                            : null
                     )
             );
+        $actorId = $authenticatedUser != null && isset($authenticatedUser->id)
+            ? intval($authenticatedUser->id)
+            : intval($transaction->sender_id);
         /**
          * កំណត់អ្នកទទួលឯកសារ
          * ចាប់យកខុទ្ទកាល័យឧបនាយករដ្ឋមន្ត្រីប្រចាំការជាកន្លែងគោល
@@ -1708,7 +1722,7 @@ public function restoreFocalReceiver($id)
                     // កែពេលវេលា និងអ្នកចូលកែ
                     $receiver->update([
                         'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
-                        'updated_by' => $user->id
+                        'updated_by' => $actorId
                     ]);
                 }else{
                     // បង្កើតព័ត៌មានថ្មី
@@ -1718,8 +1732,8 @@ public function restoreFocalReceiver($id)
                             'receiver_id' => $documentOrganizatoinFocalPerson->officer_id ,
                             'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
                             'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i') ,
-                            'updated_by' => $user->id ,
-                            'created_by' => $user->id
+                            'updated_by' => $actorId ,
+                            'created_by' => $actorId
                         ]
                     );
                 }
@@ -1757,5 +1771,730 @@ public function restoreFocalReceiver($id)
                 // }
             }
         }
+    }
+
+    private function getAuthenticatedReceiverIds($user)
+    {
+        if ($user == null) {
+            return [];
+        }
+
+        $receiverIds = [$user->id];
+
+        if ($user->officer != null) {
+            $receiverIds[] = $user->officer->id;
+        }
+
+        return array_values(array_unique(array_filter($receiverIds, function ($id) {
+            return intval($id) > 0;
+        })));
+    }
+
+    private function applyTransactionVisibilityScope($builder, $user)
+    {
+        if ($user == null) {
+            $builder->whereRaw('1 = 0');
+            return;
+        }
+
+        $builder->whereNull((new RecordModel())->getTable() . '.deleted_at');
+
+        $receiverIds = $this->getAuthenticatedReceiverIds($user);
+
+        $builder->where(function ($query) use ($user, $receiverIds) {
+            $query->where('sender_id', $user->id);
+
+            if (!empty($receiverIds)) {
+                $query->orWhereHas('receiversPivot', function ($queryBuilder) use ($receiverIds) {
+                    $queryBuilder
+                        ->whereNull('deleted_at')
+                        ->whereIn('receiver_id', $receiverIds);
+                });
+            }
+        });
+    }
+
+    private function assignNextWorkflowReceivers($transaction, $sender)
+    {
+        $workflowStep = $this->resolveWorkflowStep($sender);
+        if ($workflowStep == null) {
+            return 0;
+        }
+
+        $assignedReceivers = 0;
+        if (isset($workflowStep['organization_structure_id'])) {
+            $transaction->update([
+                'organization_structure_id' => $workflowStep['organization_structure_id'],
+                'updated_by' => $sender->id,
+            ]);
+        }
+
+        if (
+            isset($workflowStep['organization_structure_id']) &&
+            !isset($workflowStep['position_name']) &&
+            !isset($workflowStep['usernames'])
+        ) {
+            $this->addReceiverBaseOnOrganizationStructure($transaction, $workflowStep['organization_structure_id']);
+            return $transaction->receiversPivot()->count();
+        }
+
+        $receiverIds = $this->findOfficerIdsByWorkflowStep($workflowStep);
+        foreach ($receiverIds as $receiverId) {
+            $exists = \App\Models\Document\Receiver::where([
+                'document_transaction_id' => $transaction->id,
+                'receiver_id' => $receiverId,
+            ])->first();
+
+            if ($exists == null) {
+                \App\Models\Document\Receiver::create([
+                    'document_transaction_id' => $transaction->id,
+                    'receiver_id' => $receiverId,
+                    'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                    'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                    'updated_by' => $sender->id,
+                    'created_by' => $sender->id,
+                ]);
+                $assignedReceivers++;
+            }
+        }
+
+        return $assignedReceivers;
+    }
+
+    private function dispatchTransaction($transaction, $sender, Request $request)
+    {
+        if ($transaction->sent_at != null && strlen(trim((string) $transaction->sent_at)) > 0) {
+            if (!$this->canRedispatchTransaction($transaction, $request)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'ឯកសារនេះត្រូវបានបញ្ជូនរួចហើយ។'
+                ],422);
+            }
+
+            $this->resetTransactionForRedispatch($transaction, $sender->id);
+        }
+
+        if (
+            $transaction->previous_transaction_id == null &&
+            (
+                ($transaction->document == null) ||
+                (
+                    $transaction->document != null &&
+                    ($transaction->document->word_file == null || strlen($transaction->document->word_file) <= 0) &&
+                    ($transaction->document->pdf_file == null || strlen($transaction->document->pdf_file) <= 0)
+                )
+            )
+        ) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'ប្រតិបត្តិការនៅដើមគ្រាមិនអាចគ្មានឯកសារយោងភ្ជាប់ជាមួយឡើយ។'
+            ],422);
+        }
+
+        $receiverCount = $this->syncRequestedReceivers($transaction, $sender, $request);
+        if ($receiverCount <= 0) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'សូមបញ្ជាក់អ្នកទទួល ឬអង្គភាពដែលត្រូវបញ្ជូនទៅ។'
+            ],422);
+        }
+
+        $transaction->send();
+
+        return true;
+    }
+
+    private function resolveSendableTransactionForUser($transaction, $user)
+    {
+        if ((int) $transaction->sender_id === (int) $user->id) {
+            return $transaction;
+        }
+
+        $receiverPivot = $transaction->receiversPivot()
+            ->whereIn('receiver_id', $this->getAuthenticatedReceiverIds($user))
+            ->first();
+
+        if ($receiverPivot == null) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'អ្នកមិនមានសិទ្ធិបញ្ជូនប្រតិបត្តិការនេះទេ។'
+            ],403);
+        }
+
+        $nextTransaction = null;
+        if (intval($transaction->next_transaction_id) > 0) {
+            $nextTransaction = RecordModel::find($transaction->next_transaction_id);
+        }
+
+        if ($nextTransaction != null && (int) $nextTransaction->sender_id === (int) $user->id) {
+            return $nextTransaction;
+        }
+
+        return $this->createOrReuseUserTransactionFromPrevious($transaction, $user, $receiverPivot);
+    }
+
+    private function createOrReuseUserTransactionFromPrevious($previousTransaction, $authenticatedUser, $receiverPivot)
+    {
+        $existingNextTransaction = RecordModel::query()
+            ->where('previous_transaction_id', $previousTransaction->id)
+            ->where('sender_id', $authenticatedUser->id)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existingNextTransaction != null) {
+            if ($receiverPivot->accepted_at == null || strlen((string) $receiverPivot->accepted_at) <= 0) {
+                $receiverPivot->update(['accepted_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+            }
+
+            if ((int) $previousTransaction->next_transaction_id !== (int) $existingNextTransaction->id) {
+                $previousTransaction->update([
+                    'next_transaction_id' => $existingNextTransaction->id,
+                    'status' => RecordModel::STATUS_FINISHED,
+                ]);
+            }
+
+            return $existingNextTransaction;
+        }
+
+        if ($receiverPivot->accepted_at == null || strlen((string) $receiverPivot->accepted_at) <= 0) {
+            $receiverPivot->update(['accepted_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')]);
+        }
+
+        $dateIn = \Carbon\Carbon::now();
+        $subject = $previousTransaction->subject;
+
+        $transaction = RecordModel::create([
+            'document_id' => null,
+            'sender_id' => $authenticatedUser->id,
+            'subject' => $subject,
+            'date_in' => $dateIn->format('Y-m-d H:i:s'),
+            'previous_transaction_id' => $previousTransaction->id,
+            'organization_structure_id' => $this->resolveCurrentOrganizationStructureId($authenticatedUser),
+            'tpid' => strlen($previousTransaction->tpid) > 0 ? $previousTransaction->tpid . ':' . $previousTransaction->id . ':' : $previousTransaction->id . ':',
+            'status' => RecordModel::STATUS_PROGRESS,
+            'created_by' => $authenticatedUser->id,
+            'updated_by' => $authenticatedUser->id,
+            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+            'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
+        ]);
+
+        $previousTransaction->update([
+            'next_transaction_id' => $transaction->id,
+            'status' => RecordModel::STATUS_FINISHED,
+        ]);
+
+        $transaction->update(['document_id' => $previousTransaction->document_id]);
+
+        return $transaction;
+    }
+
+    private function syncRequestedReceivers($transaction, $sender, Request $request)
+    {
+        $assignedReceivers = 0;
+
+        $organizationStructureId = $this->resolveRequestedOrganizationStructureId($request);
+        if ($organizationStructureId > 0) {
+            $transaction->update([
+                'organization_structure_id' => $organizationStructureId,
+                'updated_by' => $sender->id,
+            ]);
+
+            $existingCount = $transaction->receiversPivot()->count();
+            $this->addReceiverBaseOnOrganizationStructure($transaction, $organizationStructureId);
+            $assignedReceivers += max(0, $transaction->receiversPivot()->count() - $existingCount);
+        }
+
+        $receiverIds = $this->resolveRequestedReceiverIds($request);
+        if (!empty($receiverIds)) {
+            $assignedReceivers += $this->attachReceivers($transaction, $receiverIds, $sender->id);
+        }
+
+        if ($assignedReceivers <= 0 && $transaction->receiversPivot()->count() <= 0) {
+            $assignedReceivers += $this->assignNextWorkflowReceivers($transaction, $sender);
+        }
+
+        return max($assignedReceivers, $transaction->receiversPivot()->count());
+    }
+
+    private function attachReceivers($transaction, array $receiverIds, $actorId)
+    {
+        $attachedCount = 0;
+
+        foreach ($receiverIds as $receiverId) {
+            $receiverId = intval($receiverId);
+            if ($receiverId <= 0) {
+                continue;
+            }
+
+            $exists = \App\Models\Document\Receiver::where([
+                'document_transaction_id' => $transaction->id,
+                'receiver_id' => $receiverId,
+            ])->first();
+
+            if ($exists != null) {
+                continue;
+            }
+
+            \App\Models\Document\Receiver::create([
+                'document_transaction_id' => $transaction->id,
+                'receiver_id' => $receiverId,
+                'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_by' => $actorId,
+                'created_by' => $actorId,
+            ]);
+
+            $attachedCount++;
+        }
+
+        return $attachedCount;
+    }
+
+    private function resolveRequestedFlowAction(Request $request, $default = 'send')
+    {
+        $flowAction = null;
+
+        foreach (['flow_action', 'action', 'mode'] as $field) {
+            if ($request->filled($field)) {
+                $flowAction = strtolower(trim((string) $request->input($field)));
+                break;
+            }
+        }
+
+        if ($flowAction === null && $request->has('is_diy')) {
+            $flowAction = filter_var($request->input('is_diy'), FILTER_VALIDATE_BOOLEAN)
+                ? 'diy'
+                : 'send';
+        }
+
+        if (in_array($flowAction, ['diy', 'self', 'do_it_myself'], true)) {
+            return 'diy';
+        }
+
+        if ($flowAction === 'send') {
+            return 'send';
+        }
+
+        return $default;
+    }
+
+    private function requestHasDispatchTargets(Request $request)
+    {
+        return $this->resolveRequestedOrganizationStructureId($request) > 0
+            || !empty($this->resolveRequestedReceiverIds($request));
+    }
+
+    private function resolveRequestedOrganizationStructureId(Request $request)
+    {
+        foreach ([
+            'organization_structure_id',
+            'organizatoin_structure_id',
+            'organization_id',
+            'organization',
+            'target',
+            'selected_organization',
+        ] as $field) {
+            $organizationStructureId = $this->extractIdFromMixed($request->input($field));
+            if ($organizationStructureId > 0) {
+                return $organizationStructureId;
+            }
+        }
+
+        foreach (['transaction', 'record', 'current_transaction', 'currentTransaction', 'item'] as $containerField) {
+            $container = $request->input($containerField);
+            if (is_array($container) || is_object($container)) {
+                foreach (['organization_structure_id', 'organizatoin_structure_id', 'organization_id', 'organization'] as $field) {
+                    $organizationStructureId = $this->extractIdFromMixed(data_get($container, $field));
+                    if ($organizationStructureId > 0) {
+                        return $organizationStructureId;
+                    }
+                }
+            }
+        }
+
+        $organizations = $request->input('organizations');
+        if (is_array($organizations)) {
+            foreach ($organizations as $organization) {
+                $organizationStructureId = $this->extractIdFromMixed($organization);
+                if ($organizationStructureId > 0) {
+                    return $organizationStructureId;
+                }
+            }
+        }
+
+        if (is_string($organizations)) {
+            foreach (array_filter(array_map('trim', explode(',', $organizations))) as $organization) {
+                $organizationStructureId = intval($organization);
+                if ($organizationStructureId > 0) {
+                    return $organizationStructureId;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    private function resolveRequestedReceiverIds(Request $request)
+    {
+        $receiverInput = $request->input('receiver_ids');
+        if ($receiverInput === null) {
+            $receiverInput = $request->input('receivers');
+        }
+        if ($receiverInput === null) {
+            $receiverInput = $request->input('receiver_id');
+        }
+        if ($receiverInput === null) {
+            $receiverInput = $request->input('receiver');
+        }
+        if ($receiverInput === null) {
+            $receiverInput = $request->input('selected_receiver');
+        }
+        if ($receiverInput === null) {
+            $receiverInput = [];
+        }
+
+        if (is_string($receiverInput)) {
+            $receiverInput = array_filter(array_map('trim', explode(',', $receiverInput)));
+        }
+
+        if (is_numeric($receiverInput)) {
+            $receiverInput = [$receiverInput];
+        }
+
+        if (!is_array($receiverInput)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(function ($receiverId) {
+            if (is_array($receiverId)) {
+                foreach (['receiver_id', 'officer_id', 'id', 'value', 'user_id'] as $field) {
+                    if (isset($receiverId[$field]) && intval($receiverId[$field]) > 0) {
+                        return intval($receiverId[$field]);
+                    }
+                }
+
+                return 0;
+            }
+
+            if (is_object($receiverId)) {
+                foreach (['receiver_id', 'officer_id', 'id', 'value', 'user_id'] as $field) {
+                    if (isset($receiverId->{$field}) && intval($receiverId->{$field}) > 0) {
+                        return intval($receiverId->{$field});
+                    }
+                }
+
+                return 0;
+            }
+
+            return intval($receiverId);
+        }, $receiverInput), function ($receiverId) {
+            return $receiverId > 0;
+        })));
+    }
+
+    private function canRedispatchTransaction($transaction, Request $request)
+    {
+        if ($transaction->status !== RecordModel::STATUS_PENDING) {
+            return false;
+        }
+
+        if ($transaction->receiversPivot()->whereNotNull('accepted_at')->exists()) {
+            return false;
+        }
+
+        return $this->resolveRequestedOrganizationStructureId($request) > 0
+            || !empty($this->resolveRequestedReceiverIds($request));
+    }
+
+    private function resolveRequestedTransaction(Request $request, $user = null)
+    {
+        foreach ([
+            'transaction_id',
+            'document_transaction_id',
+            'id',
+            'record_id',
+            'selected_transaction',
+        ] as $field) {
+            $transactionId = $this->extractIdFromMixed($request->input($field));
+            if ($transactionId > 0) {
+                return RecordModel::find($transactionId);
+            }
+        }
+
+        foreach (['transaction', 'record', 'current_transaction', 'currentTransaction', 'item', 'document'] as $containerField) {
+            $container = $request->input($containerField);
+            if (!is_array($container) && !is_object($container)) {
+                continue;
+            }
+
+            foreach (['transaction_id', 'document_transaction_id', 'id'] as $field) {
+                $transactionId = $this->extractIdFromMixed(data_get($container, $field));
+                if ($transactionId > 0) {
+                    return RecordModel::find($transactionId);
+                }
+            }
+
+            foreach (['document_id', 'id'] as $field) {
+                $documentId = $this->extractIdFromMixed(data_get($container, $field));
+                if ($documentId > 0) {
+                    $transaction = $this->findVisibleTransactionByDocumentId($documentId, $user);
+                    if ($transaction != null) {
+                        return $transaction;
+                    }
+                }
+            }
+        }
+
+        foreach (['document_id', 'selected_document'] as $field) {
+            $documentId = $this->extractIdFromMixed($request->input($field));
+            if ($documentId > 0) {
+                $transaction = $this->findVisibleTransactionByDocumentId($documentId, $user);
+                if ($transaction != null) {
+                    return $transaction;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function findVisibleTransactionByDocumentId($documentId, $user = null)
+    {
+        $builder = RecordModel::query()
+            ->where('document_id', $documentId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('id');
+
+        if ($user != null) {
+            $receiverIds = $this->getAuthenticatedReceiverIds($user);
+            $builder->where(function ($query) use ($user, $receiverIds) {
+                $query->where('sender_id', $user->id);
+
+                if (!empty($receiverIds)) {
+                    $query->orWhereHas('receiversPivot', function ($queryBuilder) use ($receiverIds) {
+                        $queryBuilder
+                            ->whereNull('deleted_at')
+                            ->whereIn('receiver_id', $receiverIds);
+                    });
+                }
+            });
+        }
+
+        return $builder->first();
+    }
+
+    private function extractIdFromMixed($value)
+    {
+        if (is_numeric($value)) {
+            return intval($value);
+        }
+
+        if (is_string($value) && intval($value) > 0) {
+            return intval($value);
+        }
+
+        if (is_array($value)) {
+            foreach (['id', 'value', 'transaction_id', 'document_transaction_id', 'organization_structure_id', 'organization_id', 'receiver_id', 'officer_id', 'document_id'] as $field) {
+                if (isset($value[$field]) && intval($value[$field]) > 0) {
+                    return intval($value[$field]);
+                }
+            }
+        }
+
+        if (is_object($value)) {
+            foreach (['id', 'value', 'transaction_id', 'document_transaction_id', 'organization_structure_id', 'organization_id', 'receiver_id', 'officer_id', 'document_id'] as $field) {
+                if (isset($value->{$field}) && intval($value->{$field}) > 0) {
+                    return intval($value->{$field});
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    private function resolveDocumentAccessTransaction($documentId, $user, Request $request)
+    {
+        $transaction = $this->resolveRequestedTransaction($request, $user);
+        if ($transaction != null && intval($transaction->document_id) === intval($documentId)) {
+            return $transaction;
+        }
+
+        return $this->findVisibleTransactionByDocumentId($documentId, $user);
+    }
+
+    private function resolveDocumentAccessReceiver($transaction, $user, $requireAccepted)
+    {
+        if ($transaction == null || $user == null) {
+            return null;
+        }
+
+        $query = $transaction->receiversPivot()
+            ->whereNull('deleted_at')
+            ->whereIn('receiver_id', $this->getAuthenticatedReceiverIds($user));
+
+        if ($requireAccepted) {
+            $query->whereNotNull('accepted_at');
+        }
+
+        return $query->first();
+    }
+
+    private function resetTransactionForRedispatch($transaction, $actorId)
+    {
+        $timestamp = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+
+        $transaction->receiversPivot()
+            ->whereNull('accepted_at')
+            ->whereNull('deleted_at')
+            ->update([
+                'deleted_at' => $timestamp,
+                'deleted_by' => $actorId,
+                'updated_at' => $timestamp,
+                'updated_by' => $actorId,
+            ]);
+
+        $transaction->update([
+            'sent_at' => null,
+            'status' => RecordModel::STATUS_PROGRESS,
+            'updated_at' => $timestamp,
+            'updated_by' => $actorId,
+        ]);
+    }
+
+    private function resolveCurrentOrganizationStructureId($user)
+    {
+        if ($user == null || $user->officer == null) {
+            return null;
+        }
+
+        $job = $user->officer->getCurrentJob();
+        if ($job == null || $job->organizationStructurePosition == null) {
+            return null;
+        }
+
+        return intval($job->organizationStructurePosition->organization_structure_id) > 0
+            ? intval($job->organizationStructurePosition->organization_structure_id)
+            : null;
+    }
+
+    private function resolveWorkflowStep($sender)
+    {
+        if ($sender == null || $sender->officer == null) {
+            return null;
+        }
+
+        $job = $sender->officer->getCurrentJob();
+        if ($job == null || $job->organizationStructurePosition == null) {
+            return null;
+        }
+
+        $organizationStructureId = $job->organizationStructurePosition->organization_structure_id;
+        $positionName = $job->organizationStructurePosition->position != null
+            ? trim($job->organizationStructurePosition->position->name)
+            : '';
+        $organizationName = $job->organizationStructurePosition->organizationStructure != null
+            && $job->organizationStructurePosition->organizationStructure->organization != null
+            ? trim($job->organizationStructurePosition->organizationStructure->organization->name)
+            : '';
+
+        $isAdministrationDepartment = in_array($organizationName, [
+            'នាយកដ្ឋានរដ្ឋបាល',
+            'អគ្គនាយកដ្ឋានរដ្ឋបាល និងហិរញ្ញវត្ថុ',
+        ], true);
+
+        if ($isAdministrationDepartment && $positionName !== 'ប្រធាននាយកដ្ឋាន') {
+            return [
+                'organization_structure_id' => $organizationStructureId,
+                'position_name' => 'ប្រធាននាយកដ្ឋាន',
+            ];
+        }
+
+        if ($isAdministrationDepartment && $positionName === 'ប្រធាននាយកដ្ឋាន') {
+            return [
+                'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
+                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+                ),
+                'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
+            ];
+        }
+
+        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ' && $positionName === 'នាយកខុទ្ទកាល័យ') {
+            return [
+                'organization_structure_id' => $organizationStructureId,
+                'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
+            ];
+        }
+
+        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ' && $positionName === 'មន្ត្រី') {
+            return [
+                'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
+                    'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល'
+                ),
+                'usernames' => ['docflow.specialist.unit@ocm.gov.kh'],
+            ];
+        }
+
+        if ($organizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល') {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function resolveOrganizationStructureIdByName($organizationName)
+    {
+        static $cache = [];
+
+        $organizationName = trim((string) $organizationName);
+        if ($organizationName === '') {
+            return null;
+        }
+
+        if (array_key_exists($organizationName, $cache)) {
+            return $cache[$organizationName];
+        }
+
+        $organizationStructureId = \App\Models\Organization\OrganizationStructure::query()
+            ->whereHas('organization', function ($query) use ($organizationName) {
+                $query->where('name', $organizationName);
+            })
+            ->orderBy('id')
+            ->value('id');
+
+        $cache[$organizationName] = $organizationStructureId != null
+            ? intval($organizationStructureId)
+            : null;
+
+        return $cache[$organizationName];
+    }
+
+    private function findOfficerIdsByWorkflowStep($workflowStep)
+    {
+        if (isset($workflowStep['usernames']) && is_array($workflowStep['usernames']) && !empty($workflowStep['usernames'])) {
+            return \App\Models\Officer\Officer::query()
+                ->whereHas('user', function ($query) use ($workflowStep) {
+                    $query->whereIn('username', $workflowStep['usernames']);
+                })
+                ->pluck('id')
+                ->filter(function ($id) {
+                    return intval($id) > 0;
+                })->unique()->values()->toArray();
+        }
+
+        $builder = \App\Models\Officer\OfficerJob::query()
+            ->whereNull('end')
+            ->whereHas('organizationStructurePosition', function ($query) use ($workflowStep) {
+                $query->where('organization_structure_id', $workflowStep['organization_structure_id']);
+
+                if (isset($workflowStep['position_name'])) {
+                    $query->whereHas('position', function ($positionQuery) use ($workflowStep) {
+                        $positionQuery->where('name', $workflowStep['position_name']);
+                    });
+                }
+            });
+
+        return $builder->pluck('officer_id')->filter(function ($id) {
+            return intval($id) > 0;
+        })->unique()->values()->toArray();
     }
 }

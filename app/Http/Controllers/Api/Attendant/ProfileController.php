@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Api\Attendant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesAvatarUploads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 
 use App\Models\User;
 
 class ProfileController extends Controller
 {
+    use HandlesAvatarUploads;
+
     public function getAuthUser (Request $request)
     {
         $user = Auth::user();
@@ -71,7 +73,13 @@ class ProfileController extends Controller
         $user = Auth::user();
         if( $user ){
 
-            $uniqeName = Storage::disk('public')->putFile( "avatars/".$user->id, new File( $_FILES['files']['tmp_name'][0] ) );
+            $uniqeName = $this->storeAvatarUpload($request, $user->id);
+            if( $uniqeName == null ){
+                return response([
+                    'result' => $request->allFiles() ,
+                    'message' => 'មានបញ្ហាជាមួយរូបភាពដែលអ្នកបញ្ជូនមក។'
+                ],403);
+            }
             $user->avatar_url = $uniqeName ;
             $user->save();
 

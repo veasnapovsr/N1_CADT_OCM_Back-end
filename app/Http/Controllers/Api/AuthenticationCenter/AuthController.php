@@ -163,14 +163,14 @@ class AuthController extends Controller
         /**
          * Check roles
          */
-        if( empty( array_intersect( $user->roles->pluck('id')->toArray() , \App\Models\Role::where('tag','core_service')->pluck('id')->toArray() ) ) ){
-            /**
-             * User seem does not have any right to login into backend / core service
-             */
-            return response()->json([
-                'message' => "គណនីនេះមិនមានសិទ្ធិគ្រប់គ្រាន់។"
-            ],403);
-        }
+        // if( empty( array_intersect( $user->roles->pluck('id')->toArray() , \App\Models\Role::where('tag','core_service')->pluck('id')->toArray() ) ) ){
+        //     /**
+        //      * User seem does not have any right to login into backend / core service
+        //      */
+        //     return response()->json([
+        //         'message' => "គណនីនេះមិនមានសិទ្ធិគ្រប់គ្រាន់។"
+        //     ],403);
+        // }
 
         /**
          * Check user role

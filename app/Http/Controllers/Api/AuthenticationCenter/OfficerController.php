@@ -1302,7 +1302,6 @@ class OfficerController extends Controller
         //     ] );
         $user = \Auth::user() == null ? null : \Auth::user() ;
         $officer = intval( $request->id ) > 0 ? RecordModel::find( $request->id ) : null ;
-<<<<<<< HEAD
         $resolvedRankId = $rank_object != null
             ? intval( $rank_object->id )
             : (
@@ -1406,104 +1405,12 @@ class OfficerController extends Controller
         }
 
         $officer->people->update($peopleUpdateData);
-=======
-        if( $request->people != null ){
-            $officer->people->update([
-                'firstname' => $request->people['firstname'] ,
-                'lastname' => $request->people['lastname'] ,
-                'enfirstname' => $request->people['enfirstname'] ,
-                'enlastname' => $request->people['enlastname'] ,
-                'gender' => intval($request->people['gender']) >= 0 ? intval( $request->people['gender'] ) :  1 ,
-                'email' => $request->people['email'] ,
-                'dob' => \Carbon\Carbon::parse( $request->people['dob'] )->format('Y-m-d') ,
-                'nid' => $request->people['nid'] ,
-                'mobile_phone' => $request->people['mobile_phone'] ,
-                'office_phone' => $request->people['office_phone'] ,
-                'marry_status' => $request->people['marry_status'] != null && $request->people['marry_status'] != '' ? $request->people['marry_status'] : 'single' ,
-                'address' => isset( $request->people['address'] ) ? $request->people['address'] : '' ,
-                'address_province_id' => isset( $request->people['address_province_id'] ) && intval( $request->people['address_province_id'] ) > 0 ? intval( $request->people['address_province_id'] ) : 0 ,
-                'address_district_id' => isset( $request->people['address_district_id'] ) && intval( $request->people['address_district_id'] ) > 0 ? intval( $request->people['address_district_id'] ) : 0 ,
-                'address_commune_id' => isset( $request->people['address_commune_id'] ) && intval( $request->people['address_commune_id'] ) > 0 ? intval( $request->people['address_commune_id'] ) : 0 ,
-                'address_village_id' => isset( $request->people['address_village_id'] ) && intval( $request->people['address_village_id'] ) > 0 ? intval( $request->people['address_village_id'] ) : 0 ,
-                'current_address' => $request->people['current_address'] ?? '' ,
-                'current_address_province_id' => isset( $request->people['current_address_province_id'] ) && intval( $request->people['current_address_province_id'] ) > 0 ? intval( $request->people['current_address_province_id'] ) : 0 ,
-                'current_address_district_id' => isset( $request->people['current_address_district_id'] ) && intval( $request->people['current_address_district_id'] ) > 0 ? intval( $request->people['current_address_district_id'] ) : 0 ,
-                'current_address_commune_id' => isset( $request->people['current_address_commune_id'] ) && intval( $request->people['current_address_commune_id'] ) > 0 ? intval( $request->people['current_address_commune_id'] ) : 0 ,
-                'current_address_village_id' => isset( $request->people['current_address_village_id'] ) && intval( $request->people['current_address_village_id'] ) > 0 ? intval( $request->people['current_address_village_id'] ) : 0 ,
-                'pob' => $request->people['pob'] ?? '' ,
-                'pob_province_id' => isset( $request->people['pob_province_id'] ) && intval( $request->people['pob_province_id'] ) > 0 ? intval( $request->people['pob_province_id'] ) : 0 ,
-                'pob_district_id' => isset( $request->people['pob_district_id'] ) && intval( $request->people['pob_district_id'] ) > 0 ? intval( $request->people['pob_district_id'] ) : 0 ,
-                'pob_commune_id' => isset( $request->people['pob_commune_id'] ) && intval( $request->people['pob_commune_id'] ) > 0 ? intval( $request->people['pob_commune_id'] ) : 0 ,
-                'pob_village_id' => isset( $request->people['pob_village_id'] ) && intval( $request->people['pob_village_id'] ) > 0 ? intval( $request->people['pob_village_id'] ) : 0 ,
-                'body_condition' => intval( $request->people['body_condition'] ) ,
-                'body_condition_desp' => $request->people['body_condition_desp']??'' ,
-                'nationality' => $request->people['nationality'] ?? '' ,
-                'national' => $request->people['national'] ?? '' ,
-                // father
-                'father_firstname' => $request->people['father_firstname'] ?? '' ,
-                'father_lastname' => $request->people['father_lastname'] ?? '' ,
-                'father_enfirstname' => $request->people['father_enfirstname'] ?? '' ,
-                'father_enlastname' => $request->people['father_enlastname'] ?? '' ,
-                'father_dob' => $request->people['father_dob'] ?? '' ,
-                'father_nationality' => $request->people['father_nationality'] ?? '' ,
-                'father_national' => $request->people['father_national'] ?? '' ,
-                'father_nid' => $request->people['father_nid'] ?? '' ,
-                'father_pob' => $request->people['father_pob'] ?? '' ,
-                'father_address' => $request->people['father_address'] ?? '' ,
-                'father_address_province_id' => isset( $request->people['father_address_province_id'] ) && intval( $request->people['father_address_province_id'] ) > 0 ? intval( $request->people['father_address_province_id'] ) : 0 ,
-                'father_address_district_id' => isset( $request->people['father_address_district_id'] ) && intval( $request->people['father_address_district_id'] ) > 0 ? intval( $request->people['father_address_district_id'] ) : 0 ,
-                'father_address_commune_id' => isset( $request->people['father_address_commune_id'] ) && intval( $request->people['father_address_commune_id'] ) > 0 ? intval( $request->people['father_address_commune_id'] ) : 0 ,
-                'father_address_village_id' => isset( $request->people['father_address_village_id'] ) && intval( $request->people['father_address_village_id'] ) > 0 ? intval( $request->people['father_address_village_id'] ) : 0 ,
-                'father_death' => intval($request->people['father_death']) ,
-                'father_profession' => $request->people['father_profession'] ?? '' ,
-                // mother
-                'mother_firstname' => $request->people['mother_firstname'] ?? '' ,
-                'mother_lastname' => $request->people['mother_lastname'] ?? '' ,
-                'mother_enfirstname' => $request->people['mother_enfirstname'] ?? '' ,
-                'mother_enlastname' => $request->people['mother_enlastname'] ?? '' ,
-                'mother_dob' => $request->people['mother_dob'] ?? '' ,
-                'mother_nationality' => $request->people['mother_nationality'] ?? '' ,
-                'mother_national' => $request->people['mother_national'] ?? '' ,
-                'mother_nid' => $request->people['mother_nid'] ?? '' ,
-                'mother_pob' => $request->people['mother_pob'] ?? '' ,
-                'mother_address' => $request->people['mother_address'] ?? '' ,
-                'mother_address_province_id' => isset( $request->people['mother_address_province_id'] ) && intval( $request->people['mother_address_province_id'] ) > 0 ? intval( $request->people['mother_address_province_id'] ) : 0 ,
-                'mother_address_district_id' => isset( $request->people['mother_address_district_id'] ) && intval( $request->people['mother_address_district_id'] ) > 0 ? intval( $request->people['mother_address_district_id'] ) : 0 ,
-                'mother_address_commune_id' => isset( $request->people['mother_address_commune_id'] ) && intval( $request->people['mother_address_commune_id'] ) > 0 ? intval( $request->people['mother_address_commune_id'] ) : 0 ,
-                'mother_address_village_id' => isset( $request->people['mother_address_village_id'] ) && intval( $request->people['mother_address_village_id'] ) > 0 ? intval( $request->people['mother_address_village_id'] ) : 0 ,
-                'mother_death' => intval($request->people['mother_death']) ,
-                'mother_profession' => $request->people['mother_profession'] ?? '' ,
-                // Emergency 
-                'emergency_lastname' => $request->people['emergency_lastname'] ,
-                'emergency_firstname' => $request->people['emergency_firstname'] ,
-                'emergency_gender' => intval( $request->people['emergency_gender'] ) ,
-                'emergency_relationship' => $request->people['emergency_relationship'] ,
-                'emergency_profession' => $request->people['emergency_profession'] ,
-                'emergency_phone' => $request->people['emergency_phone'] ,
-                'emergency_email' => $request->people['emergency_email'] ,
-                'emergency_address' => $request->people['emergency_address'] ,
-                'emergency_address_province_id' => isset( $request->people['emergency_address_province_id'] ) && intval( $request->people['emergency_address_province_id'] ) > 0 ? $request->people['emergency_address_province_id'] : 0 ,
-                'emergency_address_district_id' => isset( $request->people['emergency_address_district_id'] ) && intval( $request->people['emergency_address_district_id'] ) > 0 ? $request->people['emergency_address_district_id'] : 0 ,
-                'emergency_address_commune_id' => isset( $request->people['emergency_address_commune_id'] ) && intval( $request->people['emergency_address_commune_id'] ) > 0 ? $request->people['emergency_address_commune_id'] : 0 ,
-                'emergency_address_village_id' => isset( $request->people['emergency_address_village_id'] ) && intval( $request->people['emergency_address_village_id'] ) > 0 ? $request->people['emergency_address_village_id'] : 0 ,
-                'updated_by' => $user == null ? 0 : $user->id ,
-                'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-            ]);
-        }
->>>>>>> bdc48dd5c1c72a1e028842436fdbe6130ef26dfd
 
         $whereCondition = [
                 'code' => $request->code ,
-<<<<<<< HEAD
                 'organization_id' => $organization != null && intval( $organization->id ) > 0 ? $organization->id : null ,
                 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
                 'rank_id' => $resolvedRankId ,
-=======
-                // 'organization_id' => $organization != null && intval( $organization->id ) > 0 ? $organization->id : null ,
-                // 'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
-                // 'rank_id' => $rank_object == null ? $officer->rank_id : $rank_object->id ,
-                'rank_id' => $rank_object == null ? null : $rank_object->id ,
->>>>>>> bdc48dd5c1c72a1e028842436fdbe6130ef26dfd
                 'countesy_id' => intval( $request->countesy_id ) , 
                 'passport' => $request->passport ,
                 'email' => $request->email ,
@@ -1516,19 +1423,7 @@ class OfficerController extends Controller
                 'image' => $officerImage !== '' ? $officerImage : $officer->image ,
                 'updated_by' => $user == null ? 0 : $user->id ,
                 'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s')
-<<<<<<< HEAD
-            ] : [
-                'code' => $request->code ,
-                'position_id' => $position != null && intval( $position->id ) > 0 ? $position->id : null ,
-                'countesy_id' => intval( $request->countesy_id ) , 
-                'passport' => $request->passport ,
-                'email' => $request->email ,
-                'phone' => $request->phone,
-                'image' => $officerImage !== '' ? $officerImage : $officer->image
-            ] ;
-=======
             ];
->>>>>>> bdc48dd5c1c72a1e028842436fdbe6130ef26dfd
         $officer->update( $whereCondition );
 
         $currentJob = $officer->getCurrentJob();

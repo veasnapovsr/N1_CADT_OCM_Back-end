@@ -4,17 +4,19 @@ use App\Http\Controllers\Api\AuthenticationCenter\Document\TransactionController
 Route::group([
   'prefix' => 'documents' ,
   'namespace' => 'Api' ,
-  'middleware' => 'api'
+  'middleware' => ['api', 'auth:api']
   ], function() {
 
     Route::group([
     'prefix' => 'transactions' ,
     'namespace' => 'Api' ,
-    'middleware' => 'api'
+    'middleware' => ['api', 'auth:api']
     ], function() {
       Route::get('',[TransactionController::class,'index']);
       Route::get('{id}/read',[TransactionController::class,'read']);
       Route::get('{id}/accept',[TransactionController::class,'accepted']);
+      Route::post('accept',[TransactionController::class,'accepted']);
+      Route::post('{id}/accept',[TransactionController::class,'accepted']);
       // Route::post('create',[TransactionController::class,'store']);
       Route::post('create',[TransactionController::class,'storeDraft']);
       Route::post('draft',[TransactionController::class,'storeDraft']);
