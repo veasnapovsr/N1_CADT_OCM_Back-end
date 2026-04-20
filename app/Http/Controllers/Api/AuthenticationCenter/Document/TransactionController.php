@@ -1864,7 +1864,7 @@ public function restoreFocalReceiver($id)
     private function dispatchTransaction($transaction, $sender, Request $request)
     {
         if ($transaction->sent_at != null && strlen(trim((string) $transaction->sent_at)) > 0) {
-            if (!$this->canRedispatchTransaction($transaction, $request)) {
+            if (!$this->canRedispatchTransaction($transaction, $request, $sender)) {
                 return response()->json([
                     'ok' => false,
                     'message' => 'ឯកសារនេះត្រូវបានបញ្ជូនរួចហើយ។'
@@ -2192,7 +2192,7 @@ public function restoreFocalReceiver($id)
         })));
     }
 
-    private function canRedispatchTransaction($transaction, Request $request)
+    private function canRedispatchTransaction($transaction, Request $request, $sender = null)
     {
         if ($transaction->status !== RecordModel::STATUS_PENDING) {
             return false;
@@ -2202,8 +2202,14 @@ public function restoreFocalReceiver($id)
             return false;
         }
 
-        return $this->resolveRequestedOrganizationStructureId($request) > 0
-            || !empty($this->resolveRequestedReceiverIds($request));
+        if (
+            $this->resolveRequestedOrganizationStructureId($request) > 0
+            || !empty($this->resolveRequestedReceiverIds($request))
+        ) {
+            return true;
+        }
+
+        return $sender != null && $this->resolveWorkflowStep($sender) != null;
     }
 
     private function resolveRequestedTransaction(Request $request, $user = null)
