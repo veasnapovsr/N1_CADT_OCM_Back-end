@@ -342,6 +342,8 @@ class TransactionController extends Controller
             ],403);
         }
 
+        $record = $this->resolvePreferredTimelineTransaction($record);
+
         // ពិនិត្យមើលអ្នកដែលមានសិទ្ធិក្នុងការបើកឯកសារមើល
         // if( ( $receiver = $record->receiversPivot()->where('receiver_id',$user->id)->first() ) != null ){
         //     // កត់ត្រាម៉ោងដែលបានចូលមើលដំបូងបង្អស់
@@ -514,6 +516,33 @@ class TransactionController extends Controller
             'record' => $responseData['records']->first() ,
             'ok' => true
         ], 200);
+    }
+
+    private function resolvePreferredTimelineTransaction($transaction)
+    {
+        if ($transaction == null) {
+            return null;
+        }
+
+        $preferredTransaction = $transaction;
+        $visitedIds = [];
+
+        while ($preferredTransaction != null && !in_array((int) $preferredTransaction->id, $visitedIds, true)) {
+            $visitedIds[] = (int) $preferredTransaction->id;
+
+            if ((int) $preferredTransaction->next_transaction_id <= 0) {
+                break;
+            }
+
+            $nextTransaction = RecordModel::find($preferredTransaction->next_transaction_id);
+            if ($nextTransaction == null) {
+                break;
+            }
+
+            $preferredTransaction = $nextTransaction;
+        }
+
+        return $preferredTransaction;
     }
 
     public function store(Request $request){
@@ -747,6 +776,28 @@ class TransactionController extends Controller
                 'ok' => true,
                 'record' => $transaction->fresh(),
                 'flow_action' => $flowAction,
+                'message' => 'ជោគជ័យ'
+            ],200);
+        }
+
+        if ($flowAction === 'approve') {
+            if (!$this->canApproveWorkflowTransaction($transaction, $user)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'អ្នកមិនមានសិទ្ធិបញ្ចប់លំហូរឯកសារនេះទេ។'
+                ],403);
+            }
+
+            $transaction->update([
+                'status' => RecordModel::STATUS_FINISHED,
+                'sent_at' => $transaction->sent_at ?: \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_by' => $user->id,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'record' => $transaction->fresh(),
+                'flow_action' => 'approve',
                 'message' => 'ជោគជ័យ'
             ],200);
         }
@@ -1826,7 +1877,7 @@ public function restoreFocalReceiver($id)
 
     private function assignNextWorkflowReceivers($transaction, $sender)
     {
-        $workflowStep = $this->resolveWorkflowStep($sender);
+        $workflowStep = $this->resolveWorkflowStep($sender, $transaction);
         if ($workflowStep == null) {
             return 0;
         }
@@ -2081,6 +2132,10 @@ public function restoreFocalReceiver($id)
             return 'diy';
         }
 
+        if (in_array($flowAction, ['approve', 'approved', 'finish', 'finished', 'done', 'complete', 'completed'], true)) {
+            return 'approve';
+        }
+
         if ($flowAction === 'send') {
             return 'send';
         }
@@ -2219,7 +2274,24 @@ public function restoreFocalReceiver($id)
             return true;
         }
 
-        return $sender != null && $this->resolveWorkflowStep($sender) != null;
+        return $sender != null && $this->resolveWorkflowStep($sender, $transaction) != null;
+    }
+
+    private function canApproveWorkflowTransaction($transaction, $user)
+    {
+        if ($transaction == null || $user == null) {
+            return false;
+        }
+
+        if ((int) $transaction->sender_id !== (int) $user->id) {
+            return false;
+        }
+
+        if ($transaction->status === RecordModel::STATUS_FINISHED) {
+            return true;
+        }
+
+        return $this->isCabinetDirectorUser($user);
     }
 
     private function resolveRequestedTransaction(Request $request, $user = null)
@@ -2464,7 +2536,7 @@ public function restoreFocalReceiver($id)
             ->values();
     }
 
-    private function resolveWorkflowStep($sender)
+    private function resolveWorkflowStep($sender, $transaction = null)
     {
         if ($sender == null || $sender->officer == null) {
             return null;
@@ -2513,6 +2585,13 @@ public function restoreFocalReceiver($id)
         }
 
         if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ' && $positionName === 'មន្ត្រី') {
+            if ($this->cameFromSpecialistUnit($transaction)) {
+                return [
+                    'organization_structure_id' => $organizationStructureId,
+                    'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
+                ];
+            }
+
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
                     'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល'
@@ -2522,10 +2601,65 @@ public function restoreFocalReceiver($id)
         }
 
         if ($organizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល') {
-            return null;
+            return [
+                'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
+                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+                ),
+                'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
+            ];
         }
 
         return null;
+    }
+
+    private function cameFromSpecialistUnit($transaction)
+    {
+        if ($transaction == null || (int) $transaction->previous_transaction_id <= 0) {
+            return false;
+        }
+
+        $previousTransaction = $transaction->relationLoaded('previous')
+            ? $transaction->previous
+            : $transaction->previous()->with('sender.officer.jobs.organizationStructurePosition.organizationStructure.organization')->first();
+
+        if ($previousTransaction == null || $previousTransaction->sender == null || $previousTransaction->sender->officer == null) {
+            return false;
+        }
+
+        $previousJob = $previousTransaction->sender->officer->getCurrentJob();
+        if ($previousJob == null || $previousJob->organizationStructurePosition == null) {
+            return false;
+        }
+
+        $previousOrganizationName = $previousJob->organizationStructurePosition->organizationStructure != null
+            && $previousJob->organizationStructurePosition->organizationStructure->organization != null
+            ? trim($previousJob->organizationStructurePosition->organizationStructure->organization->name)
+            : '';
+
+        return $previousOrganizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល';
+    }
+
+    private function isCabinetDirectorUser($user)
+    {
+        if ($user == null || $user->officer == null) {
+            return false;
+        }
+
+        $job = $user->officer->getCurrentJob();
+        if ($job == null || $job->organizationStructurePosition == null) {
+            return false;
+        }
+
+        $positionName = $job->organizationStructurePosition->position != null
+            ? trim($job->organizationStructurePosition->position->name)
+            : '';
+        $organizationName = $job->organizationStructurePosition->organizationStructure != null
+            && $job->organizationStructurePosition->organizationStructure->organization != null
+            ? trim($job->organizationStructurePosition->organizationStructure->organization->name)
+            : '';
+
+        return $organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+            && $positionName === 'នាយកខុទ្ទកាល័យ';
     }
 
     private function resolveOrganizationStructureIdByName($organizationName)
