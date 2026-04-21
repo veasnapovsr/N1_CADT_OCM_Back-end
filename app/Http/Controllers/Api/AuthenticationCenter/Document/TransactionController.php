@@ -226,17 +226,7 @@ class TransactionController extends Controller
             $record['document'] = isset($record['document']) && is_array($record['document'])
                 ? $record['document']
                 : null;
-            $receivers = collect( $record['receivers'] )->pluck('id')->toArray();
-            $record['receivers'] = \App\Models\Officer\Officer::whereIn( 'id', $receivers )->get()->map(function($receiver){
-                return [
-                    'id' => $receiver->id ,
-                    'code' => $receiver->code ,
-                    'user' => [
-                        'id' => $receiver->user->id ,
-                        'fullname' => ( $receiver->countesy != null ? $receiver->countesy->name : '' ) . ' '. $receiver->user->lastname . ' ' . $receiver->user->firstname
-                    ]
-                ];
-            });
+            $record['receivers'] = $this->buildWorkflowReceiverPayloads($record['id']);
             // Add two if statement for fullname avatar
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
@@ -287,21 +277,13 @@ class TransactionController extends Controller
 
                 $officer = \App\Models\Officer\Officer::with([
                     'people.countesy',
-                    'user'
+                    'user',
+                    'jobs.organizationStructurePosition.position',
+                    'jobs.organizationStructurePosition.organizationStructure.organization'
                 ])->find($record['sender']['officer']['id']);
 
                 if ($officer) {
-
-                    $countesyName = optional($officer->people?->countesy)->name ?? '';
-
-                    $fullname = $officer->user->lastname . ' ' . $officer->user->firstname;
-
-                    $record['sender'] = [
-                        'id' => $officer->id,
-                        'code' => $officer->code,
-                        'fullname' => $fullname,
-                        'Countesy' => $countesyName
-                    ];
+                    $record['sender'] = $this->serializeWorkflowOfficer($officer);
                 }
             }
             // if( $record['document'] != null ){
@@ -419,6 +401,7 @@ class TransactionController extends Controller
             $record['document'] = isset($record['document']) && is_array($record['document'])
                 ? $record['document']
                 : null;
+            $record['receivers'] = $this->buildWorkflowReceiverPayloads($record['id']);
             // Add two if state for fullnameand avatarurl
             if($record['sender']['firstname'] != null && strlen($record['sender']['firstname']) > 0 && $record['sender']['lastname'] != null && strlen($record['sender']['lastname']) > 0 ){
                 $record['sender']['fullname'] = $record['sender']['lastname'] . ' ' . $record['sender']['firstname'];
@@ -463,21 +446,13 @@ class TransactionController extends Controller
             if ($record['sender']['officer'] != null) {
                 $officer = \App\Models\Officer\Officer::with([
                     'people.countesy',
-                    'user'
+                    'user',
+                    'jobs.organizationStructurePosition.position',
+                    'jobs.organizationStructurePosition.organizationStructure.organization'
                 ])->find($record['sender']['officer']['id']);
 
                 if ($officer) {
-
-                    $countesyName = optional($officer->people?->countesy)->name ?? '';
-
-                    $fullname = $officer->user->lastname . ' ' . $officer->user->firstname;
-
-                    $record['sender'] = [
-                        'id' => $officer->id,
-                        'code' => $officer->code,
-                        'fullname' => $fullname,
-                        'Countesy' => $countesyName
-                    ];
+                    $record['sender'] = $this->serializeWorkflowOfficer($officer);
                 }
             }
 
@@ -494,6 +469,41 @@ class TransactionController extends Controller
                     $record['document']['word_file'] = \Storage::disk('public')->url( $record['document']['word_file'] );
                     $record['document']['word_file_size'] = round( \Storage::disk('public')->size( $OriginalPath ) / (1024 * 1024), 2) . " MB" ;   //uncomment to get filesize
                 }
+
+                $record['document']['briefings'] = DB::table('document_briefings as briefings')
+                    ->leftJoin('users as briefers', 'briefers.id', '=', 'briefings.briefer_id')
+                    ->where('briefings.document_id', $record['document']['id'])
+                    ->whereNull('briefings.deleted_at')
+                    ->orderBy('briefings.created_at')
+                    ->get([
+                        'briefings.id',
+                        'briefings.document_id',
+                        'briefings.briefer_id',
+                        'briefings.briefing',
+                        'briefings.created_at',
+                        'briefings.updated_at',
+                        'briefers.firstname as briefer_firstname',
+                        'briefers.lastname as briefer_lastname',
+                        'briefers.email as briefer_email'
+                    ])
+                    ->map(function ($briefing) {
+                        return [
+                            'id' => $briefing->id,
+                            'document_id' => $briefing->document_id,
+                            'briefer_id' => $briefing->briefer_id,
+                            'briefing' => $briefing->briefing,
+                            'created_at' => $briefing->created_at,
+                            'updated_at' => $briefing->updated_at,
+                            'briefer' => [
+                                'id' => $briefing->briefer_id,
+                                'firstname' => $briefing->briefer_firstname,
+                                'lastname' => $briefing->briefer_lastname,
+                                'email' => $briefing->briefer_email,
+                            ],
+                        ];
+                    })
+                    ->values()
+                    ->all();
             }
             $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
             return $record;
@@ -2381,6 +2391,77 @@ public function restoreFocalReceiver($id)
         return intval($job->organizationStructurePosition->organization_structure_id) > 0
             ? intval($job->organizationStructurePosition->organization_structure_id)
             : null;
+    }
+
+    private function serializeWorkflowOfficer($officer)
+    {
+        if ($officer == null) {
+            return null;
+        }
+
+        $job = $officer->getCurrentJob();
+        $positionName = $job != null
+            && $job->organizationStructurePosition != null
+            && $job->organizationStructurePosition->position != null
+            ? $job->organizationStructurePosition->position->name
+            : null;
+        $organizationName = $job != null
+            && $job->organizationStructurePosition != null
+            && $job->organizationStructurePosition->organizationStructure != null
+            && $job->organizationStructurePosition->organizationStructure->organization != null
+            ? $job->organizationStructurePosition->organizationStructure->organization->name
+            : null;
+        $fullname = $officer->user != null
+            ? trim($officer->user->lastname . ' ' . $officer->user->firstname)
+            : '';
+
+        return [
+            'id' => $officer->id,
+            'code' => $officer->code,
+            'fullname' => $fullname,
+            'Countesy' => optional($officer->people?->countesy)->name ?? '',
+            'countesy_name' => optional($officer->people?->countesy)->name ?? '',
+            'username' => $officer->user != null ? $officer->user->username : null,
+            'email' => $officer->user != null ? $officer->user->email : $officer->email,
+            'current_position' => $positionName,
+            'current_organization' => $organizationName,
+            'position' => [
+                'name' => $positionName,
+            ],
+            'organization' => [
+                'name' => $organizationName,
+            ],
+        ];
+    }
+
+    private function buildWorkflowReceiverPayloads($transactionId)
+    {
+        return \App\Models\Document\Receiver::query()
+            ->where('document_transaction_id', $transactionId)
+            ->whereNull('deleted_at')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($receiverPivot) {
+                $officer = \App\Models\Officer\Officer::with([
+                    'people.countesy',
+                    'user',
+                    'jobs.organizationStructurePosition.position',
+                    'jobs.organizationStructurePosition.organizationStructure.organization'
+                ])->find($receiverPivot->receiver_id);
+
+                return [
+                    'id' => $receiverPivot->id,
+                    'receiver_id' => $receiverPivot->receiver_id,
+                    'accepted_at' => $receiverPivot->accepted_at,
+                    'seen_at' => $receiverPivot->seen_at,
+                    'preview_at' => $receiverPivot->preview_at,
+                    'download_at' => $receiverPivot->download_at,
+                    'created_at' => $receiverPivot->created_at,
+                    'updated_at' => $receiverPivot->updated_at,
+                    'user' => $this->serializeWorkflowOfficer($officer),
+                ];
+            })
+            ->values();
     }
 
     private function resolveWorkflowStep($sender)

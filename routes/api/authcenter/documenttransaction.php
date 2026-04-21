@@ -21,6 +21,7 @@ Route::group([
       Route::post('create',[TransactionController::class,'storeDraft']);
       Route::post('draft',[TransactionController::class,'storeDraft']);
       Route::post('send',[TransactionController::class,'send']);
+      Route::post('briefing',[TransactionController::class,'addBriefing']);
       Route::post('update',[TransactionController::class,'update']);
 
       Route::delete('destroy',[TransactionController::class,'destroy']);

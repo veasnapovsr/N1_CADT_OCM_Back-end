@@ -77,8 +77,25 @@ class Transaction extends Model
         $this->save();
     }
     public function getTimeline(){
-        $ids = $this->where('tpid','like', $this->id . '%' )->pluck('id')->toArray();
-        return $this->whereIn('id', $ids )->get();
+        $rootId = $this->id;
+
+        if (is_string($this->tpid) && strlen(trim($this->tpid)) > 0) {
+            $segments = array_values(array_filter(array_map('intval', preg_split('/:+/', $this->tpid)), function ($id) {
+                return $id > 0;
+            }));
+
+            if (!empty($segments)) {
+                $rootId = $segments[0];
+            }
+        }
+
+        return self::query()
+            ->where(function ($query) use ($rootId) {
+                $query->where('id', $rootId)
+                    ->orWhere('tpid', 'like', $rootId . '%');
+            })
+            ->orderBy('id')
+            ->get();
     }
         
 }

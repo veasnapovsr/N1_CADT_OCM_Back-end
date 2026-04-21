@@ -341,12 +341,18 @@ class CreateDocumentWorkflowTestAccounts extends Command
 
     private function findPositionNode(string $organizationName, string $positionName)
     {
+        $organizationNames = array_values(array_unique(array_filter([
+            $organizationName,
+            str_replace('រដ្ឋមន្ត្រី', 'រដ្ឋមន្រ្តី', $organizationName),
+            str_replace('រដ្ឋមន្រ្តី', 'រដ្ឋមន្ត្រី', $organizationName),
+        ])));
+
         return DB::table('organization_structure_positions as osp')
             ->join('organization_structures as os', 'os.id', '=', 'osp.organization_structure_id')
             ->join('organizations as org', 'org.id', '=', 'os.organization_id')
             ->join('positions as p', 'p.id', '=', 'osp.position_id')
             ->whereNull('osp.deleted_at')
-            ->where('org.name', $organizationName)
+            ->whereIn('org.name', $organizationNames)
             ->where('p.name', $positionName)
             ->select([
                 'osp.id as organization_structure_position_id',
@@ -534,9 +540,10 @@ class CreateDocumentWorkflowTestAccounts extends Command
     private function ensureFreshOfficeDpmTransaction(array $accountsByKey, string $now): void
     {
         $sender = $accountsByKey['department_head'] ?? null;
+        $cabinetDirector = $accountsByKey['cabinet_director'] ?? null;
         $receiver = $accountsByKey['deputy_pm_office'] ?? null;
 
-        if ($sender == null || $receiver == null) {
+        if ($sender == null || $cabinetDirector == null || $receiver == null) {
             throw new \RuntimeException('Document workflow office test accounts are incomplete.');
         }
 
@@ -544,7 +551,7 @@ class CreateDocumentWorkflowTestAccounts extends Command
             ->join('document_transactions as transactions', 'transactions.id', '=', 'receivers.document_transaction_id')
             ->whereNull('receivers.deleted_at')
             ->whereNull('transactions.deleted_at')
-            ->where('transactions.sender_id', $sender['user_id'])
+            ->where('transactions.sender_id', $cabinetDirector['user_id'])
             ->where('transactions.status', \App\Models\Document\Transaction::STATUS_PENDING)
             ->where('receivers.receiver_id', $receiver['officer_id'])
             ->whereNull('receivers.accepted_at')
@@ -555,26 +562,29 @@ class CreateDocumentWorkflowTestAccounts extends Command
             return;
         }
 
-        $restorableTransactionId = DB::table('document_transaction_receivers as receivers')
+        $legacyTransactionIds = DB::table('document_transaction_receivers as receivers')
             ->join('document_transactions as transactions', 'transactions.id', '=', 'receivers.document_transaction_id')
             ->whereNull('receivers.deleted_at')
-            ->whereNotNull('transactions.deleted_at')
+            ->whereNull('transactions.deleted_at')
             ->where('transactions.sender_id', $sender['user_id'])
+            ->where('transactions.status', \App\Models\Document\Transaction::STATUS_PENDING)
             ->where('receivers.receiver_id', $receiver['officer_id'])
+            ->whereNull('receivers.accepted_at')
             ->orderByDesc('transactions.id')
-            ->value('transactions.id');
+            ->pluck('transactions.id')
+            ->unique()
+            ->values()
+            ->all();
 
-        if ($restorableTransactionId) {
+        if (!empty($legacyTransactionIds)) {
             DB::table('document_transactions')
-                ->where('id', $restorableTransactionId)
+                ->whereIn('id', $legacyTransactionIds)
                 ->update([
-                    'deleted_at' => null,
-                    'deleted_by' => 0,
+                    'deleted_at' => $now,
+                    'deleted_by' => $sender['user_id'],
                     'updated_at' => $now,
                     'updated_by' => $sender['user_id'],
                 ]);
-
-            return;
         }
 
         $timestamp = Carbon::now();
@@ -590,16 +600,41 @@ class CreateDocumentWorkflowTestAccounts extends Command
             'updated_at' => $now,
         ]);
 
-        $transaction = \App\Models\Document\Transaction::create([
+        $cabinetTransaction = \App\Models\Document\Transaction::create([
             'document_id' => $document->id,
             'sender_id' => $sender['user_id'],
             'subject' => 'Document workflow test for office DPM',
             'date_in' => $now,
             'previous_transaction_id' => 0,
             'tpid' => '',
-            'status' => \App\Models\Document\Transaction::STATUS_DRAFT,
+            'status' => \App\Models\Document\Transaction::STATUS_FINISHED,
+            'sent_at' => $now,
             'created_by' => $sender['user_id'],
             'updated_by' => $sender['user_id'],
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        \App\Models\Document\Receiver::create([
+            'document_transaction_id' => $cabinetTransaction->id,
+            'receiver_id' => $cabinetDirector['officer_id'],
+            'accepted_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'created_by' => $sender['user_id'],
+            'updated_by' => $sender['user_id'],
+        ]);
+
+        $transaction = \App\Models\Document\Transaction::create([
+            'document_id' => $document->id,
+            'sender_id' => $cabinetDirector['user_id'],
+            'subject' => 'Document workflow test for office DPM',
+            'date_in' => $now,
+            'previous_transaction_id' => $cabinetTransaction->id,
+            'tpid' => $cabinetTransaction->id . ':',
+            'status' => \App\Models\Document\Transaction::STATUS_DRAFT,
+            'created_by' => $cabinetDirector['user_id'],
+            'updated_by' => $cabinetDirector['user_id'],
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -609,7 +644,13 @@ class CreateDocumentWorkflowTestAccounts extends Command
             'receiver_id' => $receiver['officer_id'],
             'created_at' => $now,
             'updated_at' => $now,
-            'created_by' => $sender['user_id'],
+            'created_by' => $cabinetDirector['user_id'],
+            'updated_by' => $cabinetDirector['user_id'],
+        ]);
+
+        $cabinetTransaction->update([
+            'next_transaction_id' => $transaction->id,
+            'updated_at' => $now,
             'updated_by' => $sender['user_id'],
         ]);
 
