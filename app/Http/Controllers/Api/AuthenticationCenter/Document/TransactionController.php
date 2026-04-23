@@ -489,6 +489,13 @@ class TransactionController extends Controller
                         'briefers.email as briefer_email'
                     ])
                     ->map(function ($briefing) {
+                        $brieferUser = \App\Models\User::with([
+                            'officer.people.countesy',
+                            'officer.user',
+                            'officer.jobs.organizationStructurePosition.position',
+                            'officer.jobs.organizationStructurePosition.organizationStructure.organization'
+                        ])->find($briefing->briefer_id);
+
                         return [
                             'id' => $briefing->id,
                             'document_id' => $briefing->document_id,
@@ -496,18 +503,25 @@ class TransactionController extends Controller
                             'briefing' => $briefing->briefing,
                             'created_at' => $briefing->created_at,
                             'updated_at' => $briefing->updated_at,
-                            'briefer' => [
-                                'id' => $briefing->briefer_id,
-                                'firstname' => $briefing->briefer_firstname,
-                                'lastname' => $briefing->briefer_lastname,
-                                'email' => $briefing->briefer_email,
-                            ],
+                            'briefer' => $brieferUser != null && $brieferUser->officer != null
+                                ? $this->serializeWorkflowOfficer($brieferUser->officer)
+                                : [
+                                    'id' => $briefing->briefer_id,
+                                    'firstname' => $briefing->briefer_firstname,
+                                    'lastname' => $briefing->briefer_lastname,
+                                    'email' => $briefing->briefer_email,
+                                ],
                         ];
                     })
                     ->values()
                     ->all();
             }
-            $record['transactions'] = RecordModel::find($record['id'])->getTimeline();
+            $record['transactions'] = RecordModel::find($record['id'])->getTimeline()
+                ->map(function ($transaction) {
+                    return $this->serializeWorkflowTransaction($transaction);
+                })
+                ->values()
+                ->all();
             return $record;
         });
 
@@ -2490,6 +2504,8 @@ public function restoreFocalReceiver($id)
         return [
             'id' => $officer->id,
             'code' => $officer->code,
+            'firstname' => $officer->user != null ? $officer->user->firstname : null,
+            'lastname' => $officer->user != null ? $officer->user->lastname : null,
             'fullname' => $fullname,
             'Countesy' => optional($officer->people?->countesy)->name ?? '',
             'countesy_name' => optional($officer->people?->countesy)->name ?? '',
@@ -2503,6 +2519,38 @@ public function restoreFocalReceiver($id)
             'organization' => [
                 'name' => $organizationName,
             ],
+        ];
+    }
+
+    private function serializeWorkflowTransaction($transaction)
+    {
+        if ($transaction == null) {
+            return null;
+        }
+
+        $sender = \App\Models\User::with([
+            'officer.people.countesy',
+            'officer.user',
+            'officer.jobs.organizationStructurePosition.position',
+            'officer.jobs.organizationStructurePosition.organizationStructure.organization'
+        ])->find($transaction->sender_id);
+
+        return [
+            'id' => $transaction->id,
+            'document_id' => $transaction->document_id,
+            'sender_id' => $transaction->sender_id,
+            'subject' => $transaction->subject,
+            'status' => $transaction->status,
+            'sent_at' => $transaction->sent_at,
+            'date_in' => $transaction->date_in,
+            'previous_transaction_id' => $transaction->previous_transaction_id,
+            'next_transaction_id' => $transaction->next_transaction_id,
+            'created_at' => $transaction->created_at,
+            'updated_at' => $transaction->updated_at,
+            'sender' => $sender != null && $sender->officer != null
+                ? $this->serializeWorkflowOfficer($sender->officer)
+                : null,
+            'receivers' => $this->buildWorkflowReceiverPayloads($transaction->id),
         ];
     }
 
@@ -2553,7 +2601,7 @@ public function restoreFocalReceiver($id)
             : '';
         $organizationName = $job->organizationStructurePosition->organizationStructure != null
             && $job->organizationStructurePosition->organizationStructure->organization != null
-            ? trim($job->organizationStructurePosition->organizationStructure->organization->name)
+            ? $this->normalizeWorkflowOrganizationName($job->organizationStructurePosition->organizationStructure->organization->name)
             : '';
 
         $isAdministrationDepartment = in_array($organizationName, [
@@ -2571,20 +2619,20 @@ public function restoreFocalReceiver($id)
         if ($isAdministrationDepartment && $positionName === 'ប្រធាននាយកដ្ឋាន') {
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
-                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
                 ),
                 'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
             ];
         }
 
-        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ' && $positionName === 'នាយកខុទ្ទកាល័យ') {
+        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ' && $positionName === 'នាយកខុទ្ទកាល័យ') {
             return [
                 'organization_structure_id' => $organizationStructureId,
                 'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
             ];
         }
 
-        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ' && $positionName === 'មន្ត្រី') {
+        if ($organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ' && $positionName === 'មន្ត្រី') {
             if ($this->cameFromSpecialistUnit($transaction)) {
                 return [
                     'organization_structure_id' => $organizationStructureId,
@@ -2603,7 +2651,7 @@ public function restoreFocalReceiver($id)
         if ($organizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល') {
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
-                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
                 ),
                 'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
             ];
@@ -2633,7 +2681,7 @@ public function restoreFocalReceiver($id)
 
         $previousOrganizationName = $previousJob->organizationStructurePosition->organizationStructure != null
             && $previousJob->organizationStructurePosition->organizationStructure->organization != null
-            ? trim($previousJob->organizationStructurePosition->organizationStructure->organization->name)
+            ? $this->normalizeWorkflowOrganizationName($previousJob->organizationStructurePosition->organizationStructure->organization->name)
             : '';
 
         return $previousOrganizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល';
@@ -2655,18 +2703,42 @@ public function restoreFocalReceiver($id)
             : '';
         $organizationName = $job->organizationStructurePosition->organizationStructure != null
             && $job->organizationStructurePosition->organizationStructure->organization != null
-            ? trim($job->organizationStructurePosition->organizationStructure->organization->name)
+            ? $this->normalizeWorkflowOrganizationName($job->organizationStructurePosition->organizationStructure->organization->name)
             : '';
 
-        return $organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្រ្តីប្រចាំការ'
+        return $organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
             && $positionName === 'នាយកខុទ្ទកាល័យ';
+    }
+
+    private function normalizeWorkflowOrganizationName($organizationName)
+    {
+        $organizationName = trim((string) $organizationName);
+
+        if ($organizationName === '') {
+            return '';
+        }
+
+        return str_replace('រដ្ឋមន្រ្តី', 'រដ្ឋមន្ត្រី', $organizationName);
+    }
+
+    private function getWorkflowOrganizationNameCandidates($organizationName)
+    {
+        $normalizedName = $this->normalizeWorkflowOrganizationName($organizationName);
+        if ($normalizedName === '') {
+            return [];
+        }
+
+        return array_values(array_unique([
+            $normalizedName,
+            str_replace('រដ្ឋមន្ត្រី', 'រដ្ឋមន្រ្តី', $normalizedName),
+        ]));
     }
 
     private function resolveOrganizationStructureIdByName($organizationName)
     {
         static $cache = [];
 
-        $organizationName = trim((string) $organizationName);
+        $organizationName = $this->normalizeWorkflowOrganizationName($organizationName);
         if ($organizationName === '') {
             return null;
         }
@@ -2677,7 +2749,7 @@ public function restoreFocalReceiver($id)
 
         $organizationStructureId = \App\Models\Organization\OrganizationStructure::query()
             ->whereHas('organization', function ($query) use ($organizationName) {
-                $query->where('name', $organizationName);
+                $query->whereIn('name', $this->getWorkflowOrganizationNameCandidates($organizationName));
             })
             ->orderBy('id')
             ->value('id');
