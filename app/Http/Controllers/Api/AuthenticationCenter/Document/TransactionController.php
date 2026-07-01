@@ -480,6 +480,7 @@ class TransactionController extends Controller
                     ->get([
                         'briefings.id',
                         'briefings.document_id',
+                        'briefings.document_transaction_id',
                         'briefings.briefer_id',
                         'briefings.briefing',
                         'briefings.created_at',
@@ -499,6 +500,7 @@ class TransactionController extends Controller
                         return [
                             'id' => $briefing->id,
                             'document_id' => $briefing->document_id,
+                            'document_transaction_id' => $briefing->document_transaction_id ?? 0,
                             'briefer_id' => $briefing->briefer_id,
                             'briefing' => $briefing->briefing,
                             'created_at' => $briefing->created_at,
@@ -781,6 +783,7 @@ class TransactionController extends Controller
 
         $flowAction = $this->resolveRequestedFlowAction($request, 'send');
         if ($flowAction === 'diy') {
+            $this->persistWorkflowBriefing($transaction, $user, $request);
             $transaction->update([
                 'status' => RecordModel::STATUS_PROGRESS,
                 'organization_structure_id' => $this->resolveCurrentOrganizationStructureId($user),
@@ -802,6 +805,7 @@ class TransactionController extends Controller
                 ],403);
             }
 
+            $this->persistWorkflowBriefing($transaction, $user, $request);
             $transaction->update([
                 'status' => RecordModel::STATUS_FINISHED,
                 'sent_at' => $transaction->sent_at ?: \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
@@ -820,6 +824,8 @@ class TransactionController extends Controller
         if ($dispatchResult !== true) {
             return $dispatchResult;
         }
+
+        $this->persistWorkflowBriefing($transaction, $user, $request);
 
         return response()->json([
             'ok' => true ,
@@ -1429,6 +1435,59 @@ class TransactionController extends Controller
             }
         }
     }
+    private function persistWorkflowBriefing($transaction, $user, Request $request)
+    {
+        if (!$user || $transaction == null) {
+            return;
+        }
+
+        $comment = trim((string) (
+            $request->comment
+            ?? $request->briefing
+            ?? $request->note
+            ?? $request->remark
+            ?? ''
+        ));
+
+        if ($comment === '') {
+            return;
+        }
+
+        $documentId = intval($transaction->document_id);
+        if ($documentId <= 0) {
+            $previous = $transaction->previous_transaction_id
+                ? RecordModel::find($transaction->previous_transaction_id)
+                : null;
+
+            while ($previous != null && $documentId <= 0) {
+                $documentId = intval($previous->document_id);
+                $previous = $documentId <= 0 && $previous->previous_transaction_id
+                    ? RecordModel::find($previous->previous_transaction_id)
+                    : null;
+            }
+        }
+
+        if ($documentId <= 0) {
+            return;
+        }
+
+        $document = \App\Models\Document\Document::find($documentId);
+        if ($document == null) {
+            return;
+        }
+
+        $document->briefings()->create([
+            'document_id' => $document->id,
+            'document_transaction_id' => intval($transaction->id),
+            'briefer_id' => $user->id,
+            'briefing' => $comment,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+            'created_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+            'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+        ]);
+    }
+
     public function addBriefing(Request $request){
         $user = \Auth::user() != null
             ? \Auth::user()
@@ -1457,9 +1516,17 @@ class TransactionController extends Controller
                 'message' => "សូមបញ្ចូលកំណត់បង្ហាញនៃឯកសារឱ្យបានត្រឹមត្រូវ។"
             ],422);
         }
+        $transactionId = intval(
+            $request->document_transaction_id
+            ?? $request->transaction_id
+            ?? $request->id
+            ?? 0
+        );
+
         $document->briefings()->create(
             [
                 'document_id'=> $document->id ,
+                'document_transaction_id' => $transactionId > 0 ? $transactionId : 0,
                 'briefer_id' => $user->id ,
                 'briefing' => $briefing ,
                 'created_by' => $user->id ,

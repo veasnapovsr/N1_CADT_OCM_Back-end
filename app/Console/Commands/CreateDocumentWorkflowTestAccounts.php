@@ -152,6 +152,14 @@ class CreateDocumentWorkflowTestAccounts extends Command
                         throw new \RuntimeException('Existing user ' . $definition['username'] . ' has no linked officer.');
                     }
 
+                    DB::table('users')
+                        ->where('id', $existingUser->id)
+                        ->update([
+                            'password' => Hash::make($password),
+                            'active' => 1,
+                            'updated_at' => $now,
+                        ]);
+
                     $this->syncOfficerPositionNode(
                         (int) $officer->id,
                         $positionNode,
