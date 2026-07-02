@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('nameen', 191)->nullable(true); // chamroeunoum
             $table->string('nameenreverse', 191)->nullable(true); // oumchamroeun
             $table->string('firstname', 191);
-            $table->string('firstname', 191);
             $table->string('lastname', 191);
             $table->string('enfirstname', 191)->nullable();
             $table->string('enlastname', 191)->nullable();

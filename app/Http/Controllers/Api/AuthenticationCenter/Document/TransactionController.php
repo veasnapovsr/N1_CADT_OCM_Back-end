@@ -518,7 +518,10 @@ class TransactionController extends Controller
                     ->values()
                     ->all();
             }
-            $record['transactions'] = RecordModel::find($record['id'])->getTimeline()
+            $timelineRoot = $this->resolveTimelineRootTransaction(
+                RecordModel::find($record['id'])
+            );
+            $record['transactions'] = $timelineRoot->getTimeline()
                 ->map(function ($transaction) {
                     return $this->serializeWorkflowTransaction($transaction);
                 })
@@ -532,6 +535,32 @@ class TransactionController extends Controller
             'record' => $responseData['records']->first() ,
             'ok' => true
         ], 200);
+    }
+
+    private function resolveTimelineRootTransaction($transaction)
+    {
+        if ($transaction == null) {
+            return null;
+        }
+
+        $current = $transaction;
+        $visitedIds = [];
+
+        while (
+            $current != null
+            && (int) $current->previous_transaction_id > 0
+            && !in_array((int) $current->id, $visitedIds, true)
+        ) {
+            $visitedIds[] = (int) $current->id;
+            $previous = RecordModel::find($current->previous_transaction_id);
+            if ($previous == null) {
+                break;
+            }
+
+            $current = $previous;
+        }
+
+        return $current ?? $transaction;
     }
 
     private function resolvePreferredTimelineTransaction($transaction)
@@ -834,6 +863,101 @@ class TransactionController extends Controller
             'message' => 'ជោគជ័យ'
         ],200);
     }
+
+    public function reject(Request $request)
+    {
+        $user = \Auth::user() != null
+            ? \Auth::user()
+            : (
+                auth('api')->user()
+                    ? auth('api')->user()
+                    : (
+                        $request->user() != null
+                            ? $request->user()
+                            : null
+                    )
+            );
+
+        if (!$user) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'សូមចូលប្រើប្រាស់ជាមុនសិន។'
+            ],401);
+        }
+
+        $transaction = $this->resolveRequestedTransaction($request, $user);
+        if ($transaction == null) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'ប្រតិបត្តិការបញ្ជូនមិនមានឡើយ។'
+            ],422);
+        }
+
+        $receiverPivot = $transaction->receiversPivot()
+            ->whereNull('deleted_at')
+            ->whereNull('accepted_at')
+            ->whereIn('receiver_id', $this->getAuthenticatedReceiverIds($user))
+            ->first();
+
+        if ($receiverPivot == null) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'អ្នកមិនមានសិទ្ធិបដិសេធ និងបញ្ជូនត្រឡប់ឯកសារនេះទេ។'
+            ],403);
+        }
+
+        if (!in_array($transaction->status, [RecordModel::STATUS_PENDING], true)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'ឯកសារនេះមិនស្ថិតក្នុងស្ថានភាពរង់ចាំដើម្បីបដិសេធទេ។'
+            ],422);
+        }
+
+        $previousSender = $transaction->sender;
+        if ($previousSender == null || $previousSender->officer == null) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'មិនអាចរកឃើញអ្នកបញ្ជូនមុនសម្រាប់ការបញ្ជូនត្រឡប់ទេ។'
+            ],403);
+        }
+
+        $this->persistWorkflowBriefing($transaction, $user, $request);
+
+        $returnTransaction = $this->createOrReuseUserTransactionFromPrevious(
+            $transaction,
+            $user,
+            $receiverPivot
+        );
+
+        $previousOfficerId = intval($previousSender->officer->id);
+        if ($previousOfficerId <= 0) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'មិនអាចរកឃើញអ្នកទទួលត្រឡប់ទេ។'
+            ],422);
+        }
+
+        $returnTransaction->receiversPivot()
+            ->whereNull('accepted_at')
+            ->whereNull('deleted_at')
+            ->update([
+                'deleted_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                'deleted_by' => $user->id,
+                'updated_at' => \Carbon\Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_by' => $user->id,
+            ]);
+
+        $this->attachReceivers($returnTransaction, [$previousOfficerId], $user->id);
+        $returnTransaction->send();
+
+        return response()->json([
+            'ok' => true,
+            'record' => $this->serializeWorkflowTransaction($returnTransaction->fresh()),
+            'flow_action' => 'reject',
+            'message' => 'ជោគជ័យ'
+        ],200);
+    }
+
     public function update(Request $request){
         /**
          * ការកែសម្រួលព័ត៌មានរបស់ប្រតិបត្តិការបញ្ជូនឯកសារអាចធ្វើទៅបានតែមួយចំនួនប៉ុណ្ណោះគឺ
@@ -1509,8 +1633,14 @@ class TransactionController extends Controller
                 ],422);
             }
         // ត្រួតពិនិ្យកំណត់បង្ហាញនៃឯកសារ
-        $briefing = strlen( trim($request->briefing) ) > 0 ? trim($request->briefing) : false ;
-        if( $briefing == false ){
+        $briefing = trim((string) (
+            $request->briefing
+            ?? $request->comment
+            ?? $request->note
+            ?? $request->remark
+            ?? ''
+        ));
+        if( $briefing === '' ){
             return response()->json([
                 'ok' => false ,
                 'message' => "សូមបញ្ចូលកំណត់បង្ហាញនៃឯកសារឱ្យបានត្រឹមត្រូវ។"
@@ -2657,6 +2787,41 @@ public function restoreFocalReceiver($id)
             return null;
         }
 
+        $username = strtolower(trim((string) ($sender->username ?? $sender->email ?? '')));
+
+        switch ($username) {
+            case 'docflow.admin.department@ocm.gov.kh':
+                return [
+                    'usernames' => ['docflow.department.head@ocm.gov.kh'],
+                ];
+            case 'docflow.department.head@ocm.gov.kh':
+                return [
+                    'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
+                ];
+            case 'docflow.cabinet.director@ocm.gov.kh':
+                if ($this->cameFromReturnReviewOffice($transaction)) {
+                    return null;
+                }
+
+                return [
+                    'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
+                ];
+            case 'docflow.office.dpm@ocm.gov.kh':
+                if ($this->cameFromSpecialistUnit($transaction)) {
+                    return [
+                        'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
+                    ];
+                }
+
+                return [
+                    'usernames' => ['docflow.specialist.unit@ocm.gov.kh'],
+                ];
+            case 'docflow.specialist.unit@ocm.gov.kh':
+                return [
+                    'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
+                ];
+        }
+
         $job = $sender->officer->getCurrentJob();
         if ($job == null || $job->organizationStructurePosition == null) {
             return null;
@@ -2679,16 +2844,32 @@ public function restoreFocalReceiver($id)
         if ($isAdministrationDepartment && $positionName !== 'ប្រធាននាយកដ្ឋាន') {
             return [
                 'organization_structure_id' => $organizationStructureId,
-                'position_name' => 'ប្រធាននាយកដ្ឋាន',
+                'usernames' => ['docflow.department.head@ocm.gov.kh'],
             ];
         }
 
-        if ($isAdministrationDepartment && $positionName === 'ប្រធាននាយកដ្ឋាន') {
+        if (
+            $organizationName === 'ប្រធាននាយកដ្ឋាន'
+            || ($isAdministrationDepartment && $positionName === 'ប្រធាននាយកដ្ឋាន')
+        ) {
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
                     'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
-                ),
+                ) ?? $organizationStructureId,
                 'usernames' => ['docflow.cabinet.director@ocm.gov.kh'],
+            ];
+        }
+
+        if ($organizationName === 'នាយកខុទ្ទកាល័យ') {
+            if ($this->cameFromReturnReviewOffice($transaction)) {
+                return null;
+            }
+
+            return [
+                'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
+                    'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
+                ) ?? $organizationStructureId,
+                'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
             ];
         }
 
@@ -2709,22 +2890,56 @@ public function restoreFocalReceiver($id)
 
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
-                    'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល'
-                ),
+                    'អង្គភាពជំនាញ'
+                ) ?? $organizationStructureId,
                 'usernames' => ['docflow.specialist.unit@ocm.gov.kh'],
             ];
         }
 
-        if ($organizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល') {
+        if (in_array($organizationName, [
+            'អង្គភាពជំនាញ',
+            'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល',
+        ], true)) {
             return [
                 'organization_structure_id' => $this->resolveOrganizationStructureIdByName(
                     'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
-                ),
+                ) ?? $organizationStructureId,
                 'usernames' => ['docflow.office.dpm@ocm.gov.kh'],
             ];
         }
 
         return null;
+    }
+
+    private function cameFromReturnReviewOffice($transaction)
+    {
+        if ($transaction == null || (int) $transaction->previous_transaction_id <= 0) {
+            return false;
+        }
+
+        $previousTransaction = $transaction->relationLoaded('previous')
+            ? $transaction->previous
+            : $transaction->previous()->with('sender.officer.jobs.organizationStructurePosition.organizationStructure.organization')->first();
+
+        if ($previousTransaction == null || $previousTransaction->sender == null || $previousTransaction->sender->officer == null) {
+            return false;
+        }
+
+        if (!$this->cameFromSpecialistUnit($previousTransaction)) {
+            return false;
+        }
+
+        $previousJob = $previousTransaction->sender->officer->getCurrentJob();
+        if ($previousJob == null || $previousJob->organizationStructurePosition == null) {
+            return false;
+        }
+
+        $previousOrganizationName = $previousJob->organizationStructurePosition->organizationStructure != null
+            && $previousJob->organizationStructurePosition->organizationStructure->organization != null
+            ? $this->normalizeWorkflowOrganizationName($previousJob->organizationStructurePosition->organizationStructure->organization->name)
+            : '';
+
+        return $previousOrganizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ';
     }
 
     private function cameFromSpecialistUnit($transaction)
@@ -2751,7 +2966,10 @@ public function restoreFocalReceiver($id)
             ? $this->normalizeWorkflowOrganizationName($previousJob->organizationStructurePosition->organizationStructure->organization->name)
             : '';
 
-        return $previousOrganizationName === 'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល';
+        return in_array($previousOrganizationName, [
+            'អង្គភាពជំនាញ',
+            'នាយកដ្ឋានបច្ចេកវិទ្យានិងប្រតិបត្តិការឌីជីថល',
+        ], true);
     }
 
     private function isCabinetDirectorUser($user)
@@ -2773,8 +2991,13 @@ public function restoreFocalReceiver($id)
             ? $this->normalizeWorkflowOrganizationName($job->organizationStructurePosition->organizationStructure->organization->name)
             : '';
 
-        return $organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
-            && $positionName === 'នាយកខុទ្ទកាល័យ';
+        return (
+            $organizationName === 'ខុទ្ទកាល័យឯកឧត្តមឧបនាយករដ្ឋមន្ត្រីប្រចាំការ'
+            && $positionName === 'នាយកខុទ្ទកាល័យ'
+        ) || (
+            $organizationName === 'នាយកខុទ្ទកាល័យ'
+            && $positionName === 'នាយកខុទ្ទកាល័យ'
+        ) || strtolower(trim((string) ($user->email ?? $user->username ?? ''))) === 'docflow.cabinet.director@ocm.gov.kh';
     }
 
     private function normalizeWorkflowOrganizationName($organizationName)
